@@ -10,3 +10,15 @@
 [submodule "ext/libsprite"]
 	path = ext/libsprite
 	url = /afs/ece.cmu.edu/project/abstract/repos/libsprite
+[submodule "ext/libio"]
+	path = ext/libio
+	url = /afs/ece.cmu.edu/project/abstract/repos/libio
+[submodule "ext/libmsp"]
+	path = ext/libmsp
+	url = /afs/ece.cmu.edu/project/abstract/repos/libmsp
+[submodule "ext/libmspprintf"]
+	path = ext/libmspprintf
+	url = /afs/ece.cmu.edu/project/abstract/repos/libmspprintf
+[submodule "ext/libmspsoftuart"]
+	path = ext/libmspsoftuart
+	url = /afs/ece.cmu.edu/project/abstract/repos/msp430-softuart
