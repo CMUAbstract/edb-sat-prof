@@ -1,4 +1,4 @@
-EXEC = edb-sat
+EXEC = edbsat
 
 OBJECTS = \
 	main.o \
