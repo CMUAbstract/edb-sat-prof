@@ -1,0 +1,18 @@
+[submodule "ext/libedbserver"]
+	path = ext/libedbserver
+	url = /afs/ece.cmu.edu/project/abstract/repos/edb/edb-firmware
+[submodule "ext/libio"]
+	path = ext/libio
+	url = /afs/ece.cmu.edu/project/abstract/repos/edb/edb-firmware
+[submodule "ext/libmspprintf"]
+	path = ext/libmspprintf
+	url = /afs/ece.cmu.edu/project/abstract/repos/edb/edb-firmware
+[submodule "ext/libmspsoftuart"]
+	path = ext/libmspsoftuart
+	url = /afs/ece.cmu.edu/project/abstract/repos/edb/edb-firmware
+[submodule "ext/libmsp"]
+	path = ext/libmsp
+	url = /afs/ece.cmu.edu/project/abstract/repos/edb/edb-firmware
+[submodule "ext/libedb"]
+	path = ext/libedb
+	url = /afs/ece.cmu.edu/project/abstract/repos/edb/libedb
