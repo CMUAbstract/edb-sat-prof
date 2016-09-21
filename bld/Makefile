@@ -71,6 +71,7 @@ include ../Makefile.config
 
 # To build the dependee that uses the headers, we need the config macros here
 include $(LIB_ROOT)/libmsp/bld/Makefile.config
+include $(LIB_ROOT)/libedbserver/bld/Makefile.config
 
 # Need headers only, hence not a usual dep
 override CFLAGS += -I$(LIB_ROOT)/libedb/src/include
