@@ -7,7 +7,9 @@
 #include <libmsp/clock.h>
 #include <libmsp/watchdog.h>
 
+#ifdef CONFIG_DEV_CONSOLE
 #include <libio/log.h>
+#endif // CONFIG_DEV_CONSOLE
 
 #include <libedbserver/edb.h>
 #include <libedbserver/pin_assign.h>

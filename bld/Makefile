@@ -76,5 +76,7 @@ include $(LIB_ROOT)/libedbserver/bld/Makefile.config
 # Need headers only, hence not a usual dep
 override CFLAGS += -I$(LIB_ROOT)/libedb/src/include
 
+ifeq ($(CONFIG_DEV_CONSOLE),1)
 CONFIG_PRINTF_LIB = libmspsoftuart
 include $(MAKER_ROOT)/Makefile.console
+endif # CONFIG_DEV_CONSOLE
