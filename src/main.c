@@ -112,6 +112,7 @@ static void get_app_output()
 }
 #endif // CONFIG_COLLECT_APP_OUTPUT
 
+char pkt[1] = { 0x00 };
 
 int main(void)
 {
@@ -121,14 +122,132 @@ int main(void)
 	msp_watchdog_disable();
 #endif // !CONFIG_WATCHDOG
 
+#if 0
+    // TODO: temporary smoke-test
+    __disable_interrupt();
+    while (true) {
+        __bis_SR_register(LPM4_bits);
+    }
+#endif
+
+    P3DIR |= BIT0 | BIT1 | BIT2;
+    P3OUT &= ~(BIT0 | BIT1 | BIT2);
+
+    P3OUT |= BIT0;
+
+    // wait for voltage supervisor to indicate target voltage reached
+    // i.e. supercap is charged to 3.3v
+    P2IES &= ~(BIT2 | BIT4);
+    P2IFG &= ~(BIT2 | BIT4);
+    P2IE |= BIT2 | BIT4;
+    while ((P2IN & (BIT2 | BIT4)) != (BIT2 | BIT4) ) {
+        __enable_interrupt();
+        __bis_SR_register(LPM4_bits);
+    }
+    P2IE &= ~(BIT2 | BIT4);
+    P2IFG &= ~(BIT2 | BIT4);
+
+    P3OUT &= ~BIT0;
+
+#if 0
     // TODO: merge into edb_server_init?
     edb_pin_setup();
+#endif
 
+#if 0
 #ifdef CONFIG_BOOT_LED
     GPIO(PORT_LED_BOOT, OUT) |= BIT(PIN_LED_BOOT);
 #endif // CONFIG_BOOT_LED
+#endif
 
+    P3OUT |= BIT1;
     msp_clock_setup(); // set up unified clock system
+    P3OUT &= ~BIT1;
+
+    __delay_cycles(0xffff);
+#if 0
+#if 1
+    P1DIR |= BIT1 | BIT2;
+    P1OUT |= BIT2;
+    P1OUT &= ~BIT1;
+
+    __enable_interrupt();
+
+#if 1
+    SpriteRadio_SpriteRadio();
+#endif
+    while (1) {
+
+        P1OUT |= BIT1;
+#if 1
+        SpriteRadio_txInit();
+        SpriteRadio_transmit(&pkt[0], 1);
+        SpriteRadio_sleep();
+#endif
+        P1OUT &= ~BIT1;
+        __delay_cycles(0xffff);
+    }
+#else
+    __disable_interrupt();
+    while (1) {
+        __bis_SR_register(LPM4_bits);
+    }
+#endif
+#endif
+
+#if 1
+#if 1
+    __enable_interrupt();
+
+
+#if 1
+    SpriteRadio_SpriteRadio();
+#endif
+    while (1) {
+
+        //__bis_SR_register(LPM4_bits);
+#if 0
+        if (P2IN & BIT2) {
+#endif
+
+            P3OUT |= BIT2;
+#if 1
+            SpriteRadio_txInit();
+            SpriteRadio_transmit(&pkt[0], 1);
+            SpriteRadio_sleep();
+            P3OUT &= ~BIT2;
+#endif
+#if 0
+            __delay_cycles(0xffff);
+            __delay_cycles(0xffff);
+#endif
+            __delay_cycles(0xffff);
+            P3OUT &= ~BIT2;
+#if 0
+        }
+#else
+        // Could be a loop, but let's just go ahead to avoid the scenario of
+        // getting stuck in this loop, if supervisor comparator goes low after
+        // the interrupt, but before we reach this condition. By going ahead
+        // without re-checking the condition, we're simply being optimistic.
+        if (!(P2IN & BIT2)) {
+            P3OUT |= BIT1;
+            P2IES &= ~BIT2;
+            P2IFG &= ~BIT2;
+            P2IE |= BIT2;
+            __bis_SR_register(LPM4_bits);
+            P3OUT &= ~BIT1;
+        }
+    //__delay_cycles(0xffff);
+    }
+#endif
+    __disable_interrupt();
+    while (1) {
+        __bis_SR_register(LPM4_bits);
+    }
+#endif
+#endif
+
 
 #ifdef CONFIG_DEV_CONSOLE
     INIT_CONSOLE();
@@ -259,4 +378,22 @@ int main(void)
         LOG("woke up\r\n");
 #endif // CONFIG_SLEEP_IN_MAIN_LOOP
     }
+}
+
+void __attribute__ ((interrupt(PORT2_VECTOR))) P2_ISR (void)
+{
+    //P3OUT &= ~BIT0;
+#if 0
+    P2IFG &= ~(BIT2);
+    P2IE &= ~(BIT2);
+#else
+    unsigned flags = P2IFG;
+    if (flags & BIT2)
+        P2IFG &= ~BIT2;
+    if (flags & BIT4)
+        P2IFG &= ~BIT4;
+#endif
+
+    // We were sleeping waiting for interrupt, so exit sleep
+    __bic_SR_register_on_exit(LPM4_bits);
 }
