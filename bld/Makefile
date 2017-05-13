@@ -61,8 +61,8 @@ export LIBMSPSOFTUART_TIMER = A.0.0
 export LIBSPRITE_CLOCK_FREQ = 8000000
 
 # Select a pair of indexes of PRN arrays for Gold code communication
-# export LIBSPRITE_PRN_0 = 266
-# export LIBSPRITE_PRN_1 = 267
+export LIBSPRITE_PRN_0 = 266
+export LIBSPRITE_PRN_1 = 267
 
 # Second board
 #export LIBSPRITE_PRN_0 = 268
