@@ -112,8 +112,6 @@ static void get_app_output()
 }
 #endif // CONFIG_COLLECT_APP_OUTPUT
 
-char pkt[1] = { 0x00 };
-
 int main(void)
 {
 #ifdef CONFIG_WATCHDOG
@@ -122,107 +120,134 @@ int main(void)
 	msp_watchdog_disable();
 #endif // !CONFIG_WATCHDOG
 
-#if 0
-    // TODO: temporary smoke-test
+
+#if 0 // NOP main: sleep forever
     __disable_interrupt();
-    while (true) {
+    while (1) {
         __bis_SR_register(LPM4_bits);
     }
 #endif
 
-    P3DIR |= BIT0 | BIT1 | BIT2;
-    P3OUT &= ~(BIT0 | BIT1 | BIT2);
+#if 0 // TODO: temporary -- turn on APP MCU
+    P3OUT |= BIT7;
+    P3DIR |= BIT7;
+#endif
 
-    P3OUT |= BIT0;
+    P3DIR |= BIT0 | BIT2 | BIT3;
+    P3OUT &= ~(BIT0 | BIT2 | BIT3);
 
+    // BOOST_SW (TODO: macro)
+    PJOUT &= ~BIT0;
+    PJDIR |= BIT0;
+
+#if 0
+#if 0
     // wait for voltage supervisor to indicate target voltage reached
     // i.e. supercap is charged to 3.3v
-    P2IES &= ~(BIT2 | BIT4);
-    P2IFG &= ~(BIT2 | BIT4);
-    P2IE |= BIT2 | BIT4;
-    while ((P2IN & (BIT2 | BIT4)) != (BIT2 | BIT4) ) {
+    P2IES &= ~(BIT1 | BIT2);
+    P2IFG &= ~(BIT1 | BIT2);
+    P2IE |= BIT1 | BIT2;
+    while ((P2IN & (BIT1 | BIT2)) != (BIT1 | BIT2) ) {
         __enable_interrupt();
         __bis_SR_register(LPM4_bits);
     }
-    P2IE &= ~(BIT2 | BIT4);
-    P2IFG &= ~(BIT2 | BIT4);
+    P2IE &= ~(BIT1 | BIT2);
+    P2IFG &= ~(BIT1 | BIT2);
+#else // wait for VBOOST_OK only, ignore VCAP state
+    __enable_interrupt();
+    P2IES &= ~BIT2;
+    P2IFG &= ~BIT2;
+    P2IE |= BIT2;
+    while (!(P2IN & BIT2)) {
+        __bis_SR_register(LPM4_bits);
+    }
+    P2IE &= ~BIT2;
+    P2IFG &= ~BIT2;
+#endif
+#endif
 
     P3OUT &= ~BIT0;
+
+    msp_clock_setup(); // set up unified clock system
+
+#ifdef CONFIG_DEV_CONSOLE
+    INIT_CONSOLE();
+#endif // CONFIG_DEV_CONSOLE
+
+    __enable_interrupt();
+
+    LOG("EDBsat v1.1 - EDB MCU\r\n");
+
 
 #if 0
     // TODO: merge into edb_server_init?
     edb_pin_setup();
 #endif
 
-#if 0
-#ifdef CONFIG_BOOT_LED
-    GPIO(PORT_LED_BOOT, OUT) |= BIT(PIN_LED_BOOT);
-#endif // CONFIG_BOOT_LED
-#endif
+#if 0 // testing reading VDD_AP through a divider
+    // Set pin to ADC mode
+    P2MAP4 = 31;
+    P2SEL |= BIT4;
 
-    P3OUT |= BIT1;
-    msp_clock_setup(); // set up unified clock system
-    P3OUT &= ~BIT1;
+    ADC12CTL0 |= ADC12ON;
 
-    __delay_cycles(0xffff);
-#if 0
-#if 1
-    P1DIR |= BIT1 | BIT2;
-    P1OUT |= BIT2;
-    P1OUT &= ~BIT1;
-
-    __enable_interrupt();
-
-#if 1
-    SpriteRadio_SpriteRadio();
-#endif
     while (1) {
+        //Reset the ENC bit to set the starting memory address and conversion mode sequence
+        ADC12CTL0 &= ~(ADC12ENC);
 
-        P1OUT |= BIT1;
-#if 1
-        SpriteRadio_txInit();
-        SpriteRadio_transmit(&pkt[0], 1);
-        SpriteRadio_sleep();
-#endif
-        P1OUT &= ~BIT1;
-        __delay_cycles(0xffff);
-    }
-#else
-    __disable_interrupt();
-    while (1) {
-        __bis_SR_register(LPM4_bits);
+        REFCTL0 |= REFMSTR | REFTCOFF; // use reference control bits in REF, disable temp sensor
+        REFCTL0 |= REFON; // turn on reference (TODO: is this needed? or will ADC turn it on on demand?)
+
+        ADC12CTL1 |= ADC12SHP;
+        ADC12CTL0 |= ADC12SHT0_15 | ADC12SHT1_15;
+        ADC12MCTL0 |= 0x4 | ADC12SREF_1 | ADC12EOS; // channel A4
+
+        //Reset the bits about to be set
+        ADC12CTL1 &= ~(ADC12CONSEQ_3);
+
+        ADC12CTL0 |= ADC12ENC + ADC12SC;
+
+        for (int i = 0; i < 0xff; ++i) {
+            __delay_cycles(0xffff);
+        }
+
+        uint16_t vdd_ap = ADC12MEM0;
+        PRINTF("V=%u B=%u I=%x\r\n", vdd_ap, (ADC12CTL1 & ADC12BUSY), ADC12IFG);
     }
 #endif
-#endif
-
-#if 1
-#if 1
-    __enable_interrupt();
 
 
-#if 1
+    LOG("radio init\r\n");
     SpriteRadio_SpriteRadio();
-#endif
+
     while (1) {
 
-        //__bis_SR_register(LPM4_bits);
 #if 0
         if (P2IN & BIT2) {
 #endif
 
+            LOG("tx start\r\n");
             P3OUT |= BIT2;
-#if 1
+
+            static char pkt[1] = { 0xED };
+
             SpriteRadio_txInit();
             SpriteRadio_transmit(&pkt[0], 1);
             SpriteRadio_sleep();
+
             P3OUT &= ~BIT2;
+            LOG("tx end\r\n");
+
+#if 1 // disable booster, go to sleep to charge
+            LOG("shutdown\r\n");
+            PJOUT |= BIT0;
+            __disable_interrupt();
+            while (1) { // wait for power to be cut
+                __bis_SR_register(LPM4_bits);
+            }
+#else
+            while(1); // discharge
 #endif
-#if 0
-            __delay_cycles(0xffff);
-            __delay_cycles(0xffff);
-#endif
-            __delay_cycles(0xffff);
-            P3OUT &= ~BIT2;
 #if 0
         }
 #else
@@ -238,24 +263,8 @@ int main(void)
             __bis_SR_register(LPM4_bits);
             P3OUT &= ~BIT1;
         }
-    //__delay_cycles(0xffff);
+#endif
     }
-#endif
-    __disable_interrupt();
-    while (1) {
-        __bis_SR_register(LPM4_bits);
-    }
-#endif
-#endif
-
-
-#ifdef CONFIG_DEV_CONSOLE
-    INIT_CONSOLE();
-#endif // CONFIG_DEV_CONSOLE
-
-    __enable_interrupt();                   // enable all interrupts
-
-    LOG("\r\nEDB\r\n");
 
 #ifdef CONFIG_SEED_RNG_FROM_VCAP
     // Seed the random number generator
@@ -283,7 +292,11 @@ int main(void)
 
     // Randomly choose which action to perform (EDB does not keep state across reboots)
     // NOTE: this is outside the loop, because within the loop we manually chain the tasks.
+#if 0
     task_t task = rand() % NUM_TASKS;
+#else
+    task_t task = TASK_APP_OUTPUT;
+#endif
     LOG("task: %u\r\n", task);
 
     switch (task) {
@@ -305,7 +318,9 @@ int main(void)
 
     LOG("main loop\r\n");
 
+#ifdef CONFIG_MAIN_LOOP_LED
     unsigned main_loop_count = 0;
+#endif // CONFIG_MAIN_LOOP_LED
 
     while(1) {
 
@@ -344,7 +359,7 @@ int main(void)
             task_flags |= FLAG_SEND_BEACON;
             continue;
         }
-#endif
+#endif // CONFIG_COLLECT_APP_OUTPUT
 
 #ifdef CONFIG_COLLECT_ENERGY_PROFILE
         if (task_flags & FLAG_ENERGY_PROFILE_READY) {
@@ -357,7 +372,7 @@ int main(void)
             //task_flags |= FLAG_SEND_BEACON;
             continue;
         }
-#endif
+#endif // CONFIG_COLLECT_ENERGY_PROFILE
 
         edb_service();
 
@@ -369,7 +384,7 @@ int main(void)
                 GPIO(PORT_LED_MAIN_LOOP, OUT) ^= BIT(PIN_LED_MAIN_LOOP);
             }
         }
-#endif
+#endif // CONFIG_MAIN_LOOP_LED
 
 #ifdef CONFIG_SLEEP_IN_MAIN_LOOP
         LOG("sleep\r\n");
@@ -382,16 +397,15 @@ int main(void)
 
 void __attribute__ ((interrupt(PORT2_VECTOR))) P2_ISR (void)
 {
-    //P3OUT &= ~BIT0;
 #if 0
     P2IFG &= ~(BIT2);
     P2IE &= ~(BIT2);
 #else
     unsigned flags = P2IFG;
+    if (flags & BIT1)
+        P2IFG &= ~BIT1;
     if (flags & BIT2)
         P2IFG &= ~BIT2;
-    if (flags & BIT4)
-        P2IFG &= ~BIT4;
 #endif
 
     // We were sleeping waiting for interrupt, so exit sleep
