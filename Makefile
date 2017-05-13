@@ -1,4 +1,4 @@
-export BOARD ?= edb
+export BOARD ?= sprite-edb-v1.2
 
 TOOLCHAINS = \
 	gcc \
