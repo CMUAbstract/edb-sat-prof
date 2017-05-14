@@ -20,6 +20,7 @@
 #include <libedbserver/codepoint.h>
 #include <libedbserver/tether.h>
 
+#include "pins.h"
 #include "payload.h"
 
 #define CONFIG_MAIN_LOOP_SLEEP_STATE LPM0_bits
@@ -136,9 +137,8 @@ int main(void)
     P3DIR |= BIT0 | BIT2 | BIT3;
     P3OUT &= ~(BIT0 | BIT2 | BIT3);
 
-    // BOOST_SW (TODO: macro)
-    PJOUT &= ~BIT0;
-    PJDIR |= BIT0;
+    GPIO(PORT_BOOST_SW, OUT) &= ~BIT(PIN_BOOST_SW);
+    GPIO(PORT_BOOST_SW, DIR) |= BIT(PIN_BOOST_SW);
 
 #if 0
 #if 0
@@ -240,7 +240,7 @@ int main(void)
 
 #if 1 // disable booster, go to sleep to charge
             LOG("shutdown\r\n");
-            PJOUT |= BIT0;
+            GPIO(PORT_BOOST_SW, OUT) |= BIT(PIN_BOOST_SW);
             __disable_interrupt();
             while (1) { // wait for power to be cut
                 __bis_SR_register(LPM4_bits);
