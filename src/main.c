@@ -121,17 +121,16 @@ int main(void)
 	msp_watchdog_disable();
 #endif // !CONFIG_WATCHDOG
 
+#if 1 // TODO: temporary -- turn on APP MCU
+    GPIO(PORT_APP_SW, OUT) |= BIT(PIN_APP_SW);
+    GPIO(PORT_APP_SW, DIR) |= BIT(PIN_APP_SW);
+#endif
 
 #if 0 // NOP main: sleep forever
     __disable_interrupt();
     while (1) {
         __bis_SR_register(LPM4_bits);
     }
-#endif
-
-#if 0 // TODO: temporary -- turn on APP MCU
-    P3OUT |= BIT7;
-    P3DIR |= BIT7;
 #endif
 
     P3DIR |= BIT0 | BIT2 | BIT3;
