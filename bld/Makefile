@@ -79,6 +79,6 @@ include $(LIB_ROOT)/libedbserver/bld/Makefile.config
 override CFLAGS += -I$(LIB_ROOT)/libedb/src/include
 
 ifeq ($(CONFIG_DEV_CONSOLE),1)
-CONFIG_PRINTF_LIB = libmspsoftuart
+export CONFIG_PRINTF_LIB = libmspsoftuart
 include $(MAKER_ROOT)/Makefile.console
 endif # CONFIG_DEV_CONSOLE
