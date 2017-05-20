@@ -34,7 +34,11 @@ typedef struct _edb_info_t{
   int8_t averages[NUM_SENSORS][NUM_WINDOWS];
 } edb_info_t;
 
+#if 0
 static payload_t payload; // EDB+App data sent to host/ground
+#else
+payload_t payload; // EDB+App data sent to host/ground
+#endif
 
 static uint8_t host_msg_buf[HOST_MSG_BUF_SIZE];
 static uint8_t * const host_msg_payload = &host_msg_buf[UART_MSG_HEADER_SIZE];

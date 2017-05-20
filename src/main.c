@@ -288,7 +288,28 @@ int main(void)
     LOG("seed: %u\r\n", seed);
 #endif // CONFIG_SEED_RNG_FROM_VCAP
 
+    extern payload_t payload;
     payload_init();
+
+#if 1
+    LOG("collecting profile\r\n");
+    while (1) {
+
+        //for (int i = 0; i < 32; ++i) {
+        //    __delay_cycles(0xffff);
+        //}
+
+        LOG("event cnts: %u %u %u %u\r\n",
+            payload.energy_profile.events[0].count,
+            payload.energy_profile.events[1].count,
+            payload.energy_profile.events[2].count,
+            payload.energy_profile.events[3].count);
+
+
+            // will wake up on watchpoint
+            __bis_SR_register(LPM0_bits);
+    }
+#endif
 
 #ifdef CONFIG_BOOT_LED
     GPIO(PORT_LED_BOOT, OUT) &= ~BIT(PIN_LED_BOOT);
