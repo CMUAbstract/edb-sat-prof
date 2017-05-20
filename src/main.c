@@ -178,9 +178,13 @@ int main(void)
     LOG("EDBsat v1.1 - EDB MCU\r\n");
 
 
-#if 0
+#if 1
     // TODO: merge into edb_server_init?
+    LOG("EDB pin setup\r\n");
     edb_pin_setup();
+    LOG("EDB server init\r\n");
+    edb_server_init();
+    LOG("EDB server done\r\n");
 #endif
 
 #if 0 // testing reading VDD_AP through a divider
