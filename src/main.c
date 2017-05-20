@@ -220,6 +220,7 @@ int main(void)
 #endif
 
 
+#if 0
     LOG("radio init\r\n");
     SpriteRadio_SpriteRadio();
 
@@ -268,6 +269,17 @@ int main(void)
         }
 #endif
     }
+#endif
+
+#if 0
+    while (1) {
+        LOG("getting app output\r\n");
+        get_app_output();
+        LOG("got app output\r\n");
+
+        __delay_cycles(0xffff);
+    }
+#endif
 
 #ifdef CONFIG_SEED_RNG_FROM_VCAP
     // Seed the random number generator
