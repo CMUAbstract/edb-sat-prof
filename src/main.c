@@ -331,7 +331,7 @@ int main(void)
 #if 0
     task_t task = rand() % NUM_TASKS;
 #else
-    task_t task = TASK_APP_OUTPUT;
+    task_t task = TASK_BEACON;
 #endif
     LOG("task: %u\r\n", task);
 
