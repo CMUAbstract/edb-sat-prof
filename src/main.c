@@ -6,6 +6,7 @@
 #include <libmsp/periph.h>
 #include <libmsp/clock.h>
 #include <libmsp/watchdog.h>
+#include <libcapybara/capybara.h>
 
 #ifdef CONFIG_DEV_CONSOLE
 #include <libio/log.h>
@@ -135,8 +136,7 @@ int main(void)
     P3DIR |= BIT0 | BIT2 | BIT3;
     P3OUT &= ~(BIT0 | BIT2 | BIT3);
 
-    GPIO(PORT_BOOST_SW, OUT) &= ~BIT(PIN_BOOST_SW);
-    GPIO(PORT_BOOST_SW, DIR) |= BIT(PIN_BOOST_SW);
+    capybara_config_pins();
 
 #if 0
 #if 0

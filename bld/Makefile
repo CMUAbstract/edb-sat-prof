@@ -8,6 +8,7 @@ OBJECTS = \
 DEPS += \
 	libmsp \
 	libedbserver \
+	libcapybara \
 
 # Configuration local to this app executable
 export CONFIG_RADIO_TRANSMIT_PAYLOAD = 0
@@ -68,6 +69,9 @@ export LIBSPRITE_PRN_1 = 267
 # Second board
 #export LIBSPRITE_PRN_0 = 268
 #export LIBSPRITE_PRN_1 = 269
+
+export LIBCAPYBARA_PIN_VBOOST_OK = 2.0
+export LIBCAPYBARA_PIN_BOOST_SW = J.0
 
 include ../Makefile.config
 
