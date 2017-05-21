@@ -23,6 +23,8 @@ export CONFIG_TARGET_COMM_TIMEOUT = 0xff
 export CONFIG_ENERGY_PROFILE_MIN_VOLTAGE = 3276
 export CONFIG_PROFILE_SUB_BYTE_BUCKET_SIZES = 0
 
+export PIN_APP_SW = 3.7 # APP power rail switch
+
 # Configuration for libedbserver
 export CONFIG_ENABLE_WATCHPOINTS = 1
 export CONFIG_ENABLE_WATCHPOINT_CALLBACK = 1

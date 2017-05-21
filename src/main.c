@@ -20,7 +20,6 @@
 #include <libedbserver/codepoint.h>
 #include <libedbserver/tether.h>
 
-#include "pins.h"
 #include "payload.h"
 
 #define CONFIG_MAIN_LOOP_SLEEP_STATE LPM0_bits
