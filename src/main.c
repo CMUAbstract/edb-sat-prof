@@ -330,7 +330,12 @@ int main(void)
             __bis_SR_register(LPM0_bits);
     }
 
-    LOG("profiling over: out of energy\r\n");
+    __delay_cycles(256); // avoid corruption in softuart output on wakeup
+    LOG("profile: %u %u %u %u\r\n",
+        payload.energy_profile.events[0].count,
+        payload.energy_profile.events[1].count,
+        payload.energy_profile.events[2].count,
+        payload.energy_profile.events[3].count);
 
     // TODO: save profile data to Flash
 
