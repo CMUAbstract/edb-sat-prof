@@ -25,10 +25,6 @@
 
 #define CONFIG_MAIN_LOOP_SLEEP_STATE LPM0_bits
 
-// Shorthand
-#define COMP_VBANK(...)  COMP(COMP_TYPE_VBANK, __VA_ARGS__)
-#define COMP2_VBANK(...) COMP2(COMP_TYPE_VBANK, __VA_ARGS__)
-
 /** @brief Watchdog configuration */
 #define CONFIG_WDT_BITS (WDTSSEL__ACLK | WDTIS__8192K) // 4 minutes
 
@@ -52,9 +48,6 @@ typedef enum {
 } task_flag_t;
 
 static uint16_t task_flags = 0;
-
-// Flag indicating when Vcap drops below threshold to end profiling
-static volatile bool profiling_vcap_ok = false;
 
 #ifdef CONFIG_COLLECT_APP_OUTPUT // TODO: a timeout should be applied to all target comms
 /* Whether timed out while communicating with target over UART */
@@ -298,44 +291,9 @@ int main(void)
     payload_init();
 
 #if 1
-    profiling_vcap_ok = true;
 
-    // Configure comparator to interrupt when Vcap drops below a threshold
-    COMP_VBANK(CTL3) |= COMP2_VBANK(PD, COMP_CHAN_VBANK);
-    COMP_VBANK(CTL0) = COMP_VBANK(IMEN) | COMP2_VBANK(IMSEL_, COMP_CHAN_VBANK);
-    // VDD applied to resistor ladder, ladder tap applied to V+ terminal
-    COMP_VBANK(CTL2) = COMP_VBANK(RS_1) | COMP2_VBANK(REF0_, PROFILING_VBANK_MIN_DOWN) |
-                                          COMP2_VBANK(REF1_, PROFILING_VBANK_MIN_UP);
-    // Turn comparator on in ultra-low power mode
-    COMP_VBANK(CTL1) |= COMP_VBANK(PWRMD_2) | COMP_VBANK(ON);
-
-    // Clear int flag and enable int
-    COMP_VBANK(INT) &= ~(COMP_VBANK(IFG) | COMP_VBANK(IIFG));
-    COMP_VBANK(INT) |= COMP_VBANK(IE);
-
-    LOG("started profiling\r\n");
-
-    // It's safe if the interrupt happens at any point from now on.
-
-    while (profiling_vcap_ok) {
-
-        LOG("event cnts: %u %u %u %u\r\n",
-            payload.energy_profile.events[0].count,
-            payload.energy_profile.events[1].count,
-            payload.energy_profile.events[2].count,
-            payload.energy_profile.events[3].count);
-
-
-            // will wake up on watchpoint
-            __bis_SR_register(LPM0_bits);
-    }
-
-    __delay_cycles(256); // avoid corruption in softuart output on wakeup
-    LOG("profile: %u %u %u %u\r\n",
-        payload.energy_profile.events[0].count,
-        payload.energy_profile.events[1].count,
-        payload.energy_profile.events[2].count,
-        payload.energy_profile.events[3].count);
+    LOG("start profiling\r\n");
+    collect_profile();
 
     // TODO: save profile data to Flash
 
@@ -478,19 +436,4 @@ void __attribute__ ((interrupt(PORT2_VECTOR))) P2_ISR (void)
 
     // We were sleeping waiting for interrupt, so exit sleep
     __bic_SR_register_on_exit(LPM4_bits);
-}
-
-__attribute__ ((interrupt(COMP_VECTOR(COMP_TYPE_VBANK))))
-void COMP_VBANK_ISR (void)
-{
-    switch (__even_in_range(COMP_VBANK(IV), 0x4)) {
-        case COMP_VBANK(IV_IIFG):
-            break;
-        case COMP_VBANK(IV_IFG):
-            COMP_VBANK(INT) &= ~COMP_VBANK(IE);
-            COMP_VBANK(CTL1) &= ~COMP_VBANK(ON);
-            profiling_vcap_ok = false; // tell main to stop profiling
-            break;
-    }
-    __bic_SR_register_on_exit(LPM4_bits); // Exit active CPU
 }

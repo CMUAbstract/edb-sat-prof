@@ -26,7 +26,7 @@ void payload_send_app_output();
 void payload_send(); // do no use, it's too big
 
 #ifdef CONFIG_COLLECT_ENERGY_PROFILE
-void payload_record_profile_event(unsigned index, uint16_t vcap);
+bool payload_record_profile_event(unsigned index, uint16_t vcap);
 #endif
 #ifdef CONFIG_COLLECT_APP_OUTPUT
 void payload_record_app_output(const uint8_t *data, unsigned len);

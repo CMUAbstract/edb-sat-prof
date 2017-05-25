@@ -43,11 +43,6 @@ payload_t payload; // EDB+App data sent to host/ground
 static uint8_t host_msg_buf[HOST_MSG_BUF_SIZE];
 static uint8_t * const host_msg_payload = &host_msg_buf[UART_MSG_HEADER_SIZE];
 
-#ifdef CONFIG_COLLECT_ENERGY_PROFILE
-void payload_record_profile_event(unsigned index, uint16_t vcap);
-#endif // CONFIG_COLLECT_ENERGY_PROFILE
-
-
 static void log_packet(char type, uint8_t header, uint8_t *pkt, unsigned len)
 {
 #if defined(CONFIG_DEV_CONSOLE)
@@ -68,10 +63,6 @@ static void log_packet(char type, uint8_t header, uint8_t *pkt, unsigned len)
 
 void payload_init()
 {
-#ifdef CONFIG_COLLECT_ENERGY_PROFILE
-    profile_reset(&payload.energy_profile);
-    edb_set_watchpoint_callback(payload_record_profile_event);
-#endif
 #ifdef CONFIG_COLLECT_APP_OUTPUT
     memset(&payload.app_output, 0, sizeof(payload.app_output));
 #endif
@@ -150,13 +141,6 @@ void payload_send()
     SpriteRadio_sleep();
 #endif // CONFIG_RADIO_TRANSMIT_PAYLOAD
 }
-
-#ifdef CONFIG_COLLECT_ENERGY_PROFILE
-void payload_record_profile_event(unsigned index, uint16_t vcap)
-{
-    profile_event(&payload.energy_profile, index, vcap);
-}
-#endif // CONFIG_COLLECT_ENERGY_PROFILE
 
 #ifdef CONFIG_COLLECT_APP_OUTPUT
 void payload_record_app_output(const uint8_t *data, unsigned len)

@@ -2,6 +2,7 @@
 #define PROFILE_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define NUM_EVENTS                      4
 #define NUM_ENERGY_QUANTA               4
@@ -19,7 +20,17 @@ typedef struct {
     event_t events[NUM_EVENTS];
 } profile_t;
 
+extern profile_t profile;
+
+// Flag indicating when Vcap drops below threshold to end profiling
+extern volatile bool profiling_vcap_ok;
+
+// A counter in the profile data has reached its max value
+extern volatile bool profiling_overflow;
+
 void profile_reset(profile_t *profile);
-void profile_event(profile_t *profile, unsigned index, uint16_t vcap);
+
+// Process the event, and returns whether to wake up the MCU or not afterwards
+bool profile_event(unsigned index, uint16_t vcap);
 
 #endif // PROFILE_H
