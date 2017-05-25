@@ -54,7 +54,7 @@ typedef enum {
 static uint16_t task_flags = 0;
 
 // Flag indicating when Vcap drops below threshold to end profiling
-static bool profiling_vcap_ok = false;
+static volatile bool profiling_vcap_ok = false;
 
 #ifdef CONFIG_COLLECT_APP_OUTPUT // TODO: a timeout should be applied to all target comms
 /* Whether timed out while communicating with target over UART */
@@ -298,17 +298,22 @@ int main(void)
     payload_init();
 
 #if 1
-    LOG("collecting profile\r\n");
-
-    profiling_vcap_ok = true; // TODO: read Vcap (should be full, but just in case
+    profiling_vcap_ok = true;
 
     // Configure comparator to interrupt when Vcap drops below a threshold
     COMP_VBANK(CTL3) |= COMP2_VBANK(PD, COMP_CHAN_VBANK);
     COMP_VBANK(CTL0) = COMP_VBANK(IMEN) | COMP2_VBANK(IMSEL_, COMP_CHAN_VBANK);
     // VDD applied to resistor ladder, ladder tap applied to V+ terminal
-    COMP_VBANK(CTL2) = COMP_VBANK(RS_1) | COMP2_VBANK(REF0_, PROFILING_VBANK_MIN);
+    COMP_VBANK(CTL2) = COMP_VBANK(RS_1) | COMP2_VBANK(REF0_, PROFILING_VBANK_MIN_DOWN) |
+                                          COMP2_VBANK(REF1_, PROFILING_VBANK_MIN_UP);
     // Turn comparator on in ultra-low power mode
     COMP_VBANK(CTL1) |= COMP_VBANK(PWRMD_2) | COMP_VBANK(ON);
+
+    // Clear int flag and enable int
+    COMP_VBANK(INT) &= ~(COMP_VBANK(IFG) | COMP_VBANK(IIFG));
+    COMP_VBANK(INT) |= COMP_VBANK(IE);
+
+    LOG("started profiling\r\n");
 
     // It's safe if the interrupt happens at any point from now on.
 
@@ -473,8 +478,14 @@ void __attribute__ ((interrupt(PORT2_VECTOR))) P2_ISR (void)
 __attribute__ ((interrupt(COMP_VECTOR(COMP_TYPE_VBANK))))
 void COMP_VBANK_ISR (void)
 {
-    COMP_VBANK(INT) &= ~(COMP_VBANK(IE) | COMP_VBANK(IFG));
-    COMP_VBANK(CTL1) &= ~COMP_VBANK(ON);
-    profiling_vcap_ok = false; // tell main to exit loop
+    switch (__even_in_range(COMP_VBANK(IV), 0x4)) {
+        case COMP_VBANK(IV_IIFG):
+            break;
+        case COMP_VBANK(IV_IFG):
+            COMP_VBANK(INT) &= ~COMP_VBANK(IE);
+            COMP_VBANK(CTL1) &= ~COMP_VBANK(ON);
+            profiling_vcap_ok = false; // tell main to stop profiling
+            break;
+    }
     __bic_SR_register_on_exit(LPM4_bits); // Exit active CPU
 }

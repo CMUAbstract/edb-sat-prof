@@ -27,11 +27,12 @@ export CONFIG_PROFILE_SUB_BYTE_BUCKET_SIZES = 0
 export PIN_APP_SW = 3.7 # APP power rail switch
 export PIN_VBANK = 2.4 # divided Vbank voltage
 export COMP_CHAN_VBANK = B.4 # comparator channel for Vbank voltage
+export VBANK_DIV = 100:750 # adjusted for Rin of comparator
 
 # Setpoint of voltage supply to EDB MCU (set by resistor divider in hardware)
 export VDD_EDB = 2.4 # V
 # Stop profiling when supercap voltage drops below this threshold
-export PROFILING_VBANK_MIN = 2.1 # V
+export PROFILING_VBANK_MIN = 2.0 # V
 
 # Configuration for libedbserver
 export CONFIG_ENABLE_WATCHPOINTS = 1
