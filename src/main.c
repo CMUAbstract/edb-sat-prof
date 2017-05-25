@@ -140,8 +140,8 @@ int main(void)
     }
 #endif
 
-    P3DIR |= BIT0 | BIT2 | BIT3;
     P3OUT &= ~(BIT0 | BIT2 | BIT3);
+    P3DIR |= BIT0 | BIT2 | BIT3;
 
     capybara_config_pins();
 
