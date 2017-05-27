@@ -42,7 +42,7 @@ static bool arm_vcap_comparator()
 static void toggle_watchpoints(bool enable)
 {
     for (unsigned i = 0; i < NUM_CODEPOINT_PINS; ++i)
-        toggle_watchpoint(i, /* enable */ true, /* vcap snapshot */ true);
+        toggle_watchpoint(i, /* enable */ enable, /* vcap snapshot */ true);
 }
 
 void collect_profile()
