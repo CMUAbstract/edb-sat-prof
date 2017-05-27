@@ -20,12 +20,6 @@
 
 #include "payload.h"
 
-typedef enum {
-    PKT_TYPE_BEACON             = 1,
-    PKT_TYPE_APP_OUTPUT         = 2,
-    PKT_TYPE_ENERGY_PROFILE     = 3,
-} pkt_type_t;
-
 // TODO: HACK
 // From app: must match!
 #define NUM_SENSORS 7

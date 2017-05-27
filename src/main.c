@@ -22,6 +22,7 @@
 #include <libedbserver/tether.h>
 
 #include "payload.h"
+#include "flash.h"
 
 #define CONFIG_MAIN_LOOP_SLEEP_STATE LPM0_bits
 
@@ -287,15 +288,68 @@ int main(void)
     LOG("seed: %u\r\n", seed);
 #endif // CONFIG_SEED_RNG_FROM_VCAP
 
-    extern payload_t payload;
     payload_init();
 
 #if 1
 
+    LOG("look for unsent pkt in flash\r\n");
+    uint8_t *saved_pkt_desc_addr = flash_find_last_byte();
+    LOG("pkt descriptor @0x%04x\r\n", (uint16_t)saved_pkt_desc_addr);
+    if (saved_pkt_desc_addr) {
+        pkt_desc_union_t saved_pkt_desc_union;
+        saved_pkt_desc_union.raw = *saved_pkt_desc_addr; // read from flash
+        pkt_desc_t saved_pkt_desc = saved_pkt_desc_union.typed;
+
+        LOG("pkt descriptor: 0x%02x: type %u flags 0x%x size %u\r\n",
+            *(uint8_t *)&saved_pkt_desc, saved_pkt_desc.type, saved_pkt_desc.flags, saved_pkt_desc.size);
+
+        if (saved_pkt_desc.flags & PKT_FLAG_NOT_SENT) {
+            // TODO: transmit buffer at (pkt_desc - pkt_desc->size)
+            uint8_t *saved_pkt_addr = ((uint8_t*)saved_pkt_desc_addr) - saved_pkt_desc.size;
+
+            LOG("transmit pkt (addr 0x%04x len %u): ", (uint16_t)saved_pkt_addr, saved_pkt_desc.size);
+            for(int i = 0; i < saved_pkt_desc.size; ++i) {
+                LOG("%02x ", *(saved_pkt_addr + i));
+            }
+            LOG("\r\n");
+
+            pkt_desc_t sent_desc = { saved_pkt_desc.type, saved_pkt_desc.flags & ~PKT_FLAG_NOT_SENT, saved_pkt_desc.size };
+            LOG("markig pkt at 0x%04x as sent: 0x%02x\r\n", (uint16_t)saved_pkt_desc_addr, *(uint8_t *)&sent_desc);
+            flash_write_byte((uint8_t *)saved_pkt_desc_addr, *(uint8_t *)&sent_desc);
+            LOG("pkt desc: @0x%04x [0x%02x]\r\n", (uint16_t)saved_pkt_desc_addr, *(uint8_t *)saved_pkt_desc_addr);
+        }
+    }
+
+    LOG("collect profile\r\n");
+
+    LOG("check space in flash\r\n");
+    flash_loc_t loc;
+    if (!flash_find_space(PROFILE_SIZE, &loc)) {
+        LOG("out of space in flash\r\n");
+        flash_erase();
+        capybara_shutdown();
+    }
+
     LOG("start profiling\r\n");
     collect_profile();
 
-    // TODO: save profile data to Flash
+    pkt_desc_t pkt_desc = { PKT_TYPE_ENERGY_PROFILE, PKT_FLAG_NOT_SENT, PROFILE_SIZE };
+    LOG("saving profile to flash: ");
+    for (int i = 0; i < PROFILE_SIZE; ++i) {
+        LOG("%02x ", *(uint8_t *)&profile);
+    }
+    LOG("(%02x)\r\n", *(uint8_t *)&pkt_desc);
+
+    uint8_t *profile_saved = flash_alloc(&loc, PROFILE_SIZE + PAYLOAD_DESC_SIZE);
+    if (!flash_write(profile_saved, (uint8_t *)&profile, PROFILE_SIZE)) {
+        LOG("failed to write to flash\r\n");
+        capybara_shutdown();
+    }
+    if (!flash_write(profile_saved + PROFILE_SIZE, (uint8_t *)&pkt_desc, PAYLOAD_DESC_SIZE)) {
+        LOG("failed to write to flash\r\n");
+        capybara_shutdown();
+    }
+    LOG("saved profile and desc to flash\r\n");
 
     capybara_shutdown();
     // should not get here

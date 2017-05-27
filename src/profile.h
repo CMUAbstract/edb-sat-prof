@@ -19,6 +19,7 @@ typedef struct {
 typedef struct {
     event_t events[NUM_EVENTS];
 } profile_t;
+#define PROFILE_SIZE sizeof(profile_t) // TODO: specify explicitly, to avoid padding
 
 extern profile_t profile;
 

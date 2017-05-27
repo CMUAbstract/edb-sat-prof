@@ -7,6 +7,29 @@
 #include "profile.h"
 #endif
 
+typedef enum {
+    PKT_TYPE_BEACON             = 1,
+    PKT_TYPE_APP_OUTPUT         = 2,
+    PKT_TYPE_ENERGY_PROFILE     = 3,
+} pkt_type_t;
+
+typedef enum {
+    PKT_FLAG_NOT_SENT           = 1,
+} pkt_flags_t;
+
+// Packet descriptor to hold info about a packet in NV memory
+typedef struct {
+        pkt_type_t type:2;
+        pkt_flags_t flags:2;
+        uint8_t size:4; // bytes
+} pkt_desc_t;
+
+typedef union {
+    pkt_desc_t typed;
+    uint8_t raw;
+} pkt_desc_union_t;
+#define PAYLOAD_DESC_SIZE 1 // bytes
+
 /*
  * @brief Aggregate data packet sent from sprite to host/ground
  */
