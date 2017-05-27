@@ -92,6 +92,8 @@ uint8_t *flash_alloc(flash_loc_t *loc, unsigned len)
     // precondition: len < 16 ( so that we only need to worry about current and next word )
     // precondition: loc is a result of flash_find_space, executed after last flash_alloc
 {
+    uint8_t *p = NULL;
+
     LOG("FM: alloc: len %u, word %u bit %u\r\n", len, loc->word_idx, loc->bit_idx);
     print_mask();
 
@@ -114,17 +116,23 @@ uint8_t *flash_alloc(flash_loc_t *loc, unsigned len)
         (uint16_t)mask_word_addr, first_mask_word, second_mask_word);
 
     if (second_mask_word == 0xffff) { // no change to second word
-        flash_write_word(mask_word_addr, first_mask_word);
+        if (!flash_write_word(mask_word_addr, first_mask_word))
+            goto exit;
     } else {
         if (!((uint16_t)mask_word_addr & 0x3)) {
-            flash_write_long(mask_word_addr, first_mask_word, second_mask_word);
+            if (!flash_write_long(mask_word_addr, first_mask_word, second_mask_word))
+                goto exit;
         } else {
-            flash_write_word(mask_word_addr, first_mask_word);
-            flash_write_word(mask_word_addr + 1, second_mask_word);
+            if (!flash_write_word(mask_word_addr, first_mask_word))
+                goto exit;
+            if (!flash_write_word(mask_word_addr + 1, second_mask_word))
+                goto exit;
         }
     }
 
-    uint8_t *p = STORE_ADDR + (loc->word_idx * 16) + loc->bit_idx;
+    p = STORE_ADDR + (loc->word_idx * 16) + loc->bit_idx;
+
+exit:
     LOG("FM: alloced: 0x%04x\r\n", (uint16_t)p);
     print_mask();
     return p; 
