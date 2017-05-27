@@ -28,7 +28,7 @@ extern volatile bool profiling_vcap_ok;
 // A counter in the profile data has reached its max value
 extern volatile bool profiling_overflow;
 
-void profile_reset(profile_t *profile);
+void collect_profile();
 
 // Process the event, and returns whether to wake up the MCU or not afterwards
 bool profile_event(unsigned index, uint16_t vcap);
