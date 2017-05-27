@@ -342,13 +342,18 @@ int main(void)
     LOG("(%02x)\r\n", *(uint8_t *)&pkt_desc);
 
     uint8_t *profile_saved = flash_alloc(&loc, PROFILE_SIZE + PAYLOAD_DESC_SIZE);
+    if (!profile_saved) {
+        LOG("failed to alloc space in flash\r\n");
+        flash_erase(); // can't trust the state of the free bitmask in flash
+        capybara_shutdown();
+    }
     if (!flash_write(profile_saved, (uint8_t *)&profile, PROFILE_SIZE)) {
         LOG("failed to write to flash\r\n");
-        capybara_shutdown();
+        capybara_shutdown(); // free bitmask not affected, so no need to panic-erase
     }
     if (!flash_write(profile_saved + PROFILE_SIZE, (uint8_t *)&pkt_desc, PAYLOAD_DESC_SIZE)) {
         LOG("failed to write to flash\r\n");
-        capybara_shutdown();
+        capybara_shutdown(); // free bitmask not affected, so no need to panic-erase
     }
     LOG("saved profile and desc to flash\r\n");
 
