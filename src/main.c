@@ -337,7 +337,7 @@ int main(void)
     pkt_desc_t pkt_desc = { PKT_TYPE_ENERGY_PROFILE, PKT_FLAG_NOT_SENT, PROFILE_SIZE };
     LOG("saving profile to flash: ");
     for (int i = 0; i < PROFILE_SIZE; ++i) {
-        LOG("%02x ", *(uint8_t *)&profile);
+        LOG("%02x ", *((uint8_t *)&profile + i));
     }
     LOG("(%02x)\r\n", *(uint8_t *)&pkt_desc);
 
