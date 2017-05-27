@@ -2,6 +2,7 @@
 
 #include <libio/log.h>
 #include <libmsp/periph.h>
+#include <libmsp/sleep.h>
 #include <libedbserver/codepoint.h>
 #include <libedbserver/pin_assign.h>
 
@@ -26,6 +27,9 @@ static bool arm_vcap_comparator()
                                           COMP2_VBANK(REF1_, PROFILING_VBANK_MIN_UP);
     // Turn comparator on in ultra-low power mode
     COMP_VBANK(CTL1) |= COMP_VBANK(PWRMD_2) | COMP_VBANK(ON);
+
+    // Let the comparator output settle before checking or setting up interrupt
+    msp_sleep(VBANK_COMP_SETTLE);
 
     if (COMP_VBANK(CTL1) & COMP_VBANK(OUT)) {
         // Vcap already below threshold
