@@ -9,27 +9,20 @@
 
 #include "flash.h"
 
-#define __infoA __attribute__((section(".infoA")))
-#define __infoB __attribute__((section(".infoB")))
-#define __infoC __attribute__((section(".infoC")))
-#define __infoD __attribute__((section(".infoD")))
+// Number of words reserved for the free-block bitmask
+#define FREE_MASK_WORDS 7
+#if (FREE_MASK_WORDS * 2) + (FREE_MASK_WORDS * 16) > FLASH_STORAGE_SEGMENT_SIZE
+#error Invalid size of free block bitmask: FREE_MASK_WORDS
+#endif
 
-#define INFO_A 0x1980
-#define INFO_B 0x1900
-#define INFO_C 0x1880
-#define INFO_D 0x1800
-
-// need to fit the mask itself and (MASK_WORDS * 16) bytes of data into 128-bit segment
-#define MASK_WORDS 7
-
-#define MASK_ADDR  ((uint8_t *)INFO_B) /* don't use A, since it's locked by default */
-#define STORE_ADDR (MASK_ADDR + MASK_WORDS * 2)
+#define FREE_MASK_ADDR  ((uint8_t *)FLASH_STORAGE_SEGMENT) /* don't use A, since it's locked by default */
+#define STORE_ADDR (FREE_MASK_ADDR + FREE_MASK_WORDS * 2)
 
 static void print_mask()
 {
     LOG("FM: mask: ");
-    for (int i = 0; i < MASK_WORDS * 2; ++i) {
-        LOG("%02x ", *(MASK_ADDR + i));
+    for (int i = 0; i < FREE_MASK_WORDS * 2; ++i) {
+        LOG("%02x ", *(FREE_MASK_ADDR + i));
     }
     LOG("\r\n");
 }
@@ -47,9 +40,9 @@ static unsigned find_first_set_bit_in_word(uint16_t word)
 
 static unsigned find_first_set_word_in_mask()
 {
-    uint16_t *addr = (uint16_t *)MASK_ADDR;
+    uint16_t *addr = (uint16_t *)FREE_MASK_ADDR;
     unsigned idx = 0;
-    while (idx < MASK_WORDS && *addr++ == 0x0)
+    while (idx < FREE_MASK_WORDS && *addr++ == 0x0)
         ++idx;
     return idx;
 }
@@ -60,17 +53,17 @@ bool flash_find_space(unsigned len, flash_loc_t *loc)
     print_mask();
 
     loc->word_idx = find_first_set_word_in_mask();
-    if (loc->word_idx == MASK_WORDS) {
+    if (loc->word_idx == FREE_MASK_WORDS) {
         LOG("FM: no free words\r\n");
         return false; // no more free bytes left
     }
 
-    loc->bit_idx = find_first_set_bit_in_word(*(((uint16_t *)MASK_ADDR) + loc->word_idx));
+    loc->bit_idx = find_first_set_bit_in_word(*(((uint16_t *)FREE_MASK_ADDR) + loc->word_idx));
 
     LOG("FM: free loc: word %u bit %u\r\n", loc->word_idx, loc->bit_idx);
 
     unsigned free_bits_in_word = 16 - loc->bit_idx;
-    if (free_bits_in_word < len && loc->word_idx == MASK_WORDS - 1) {
+    if (free_bits_in_word < len && loc->word_idx == FREE_MASK_WORDS - 1) {
         LOG("FM: insufficient free bits\r\n");
         return false; // not enough free bytes left
     }
@@ -115,7 +108,7 @@ uint8_t *flash_alloc(flash_loc_t *loc, unsigned len)
     uint16_t first_mask_word = 0xffff >> (loc->bit_idx + in_first_word);
     uint16_t second_mask_word = 0xffff >> in_second_word; // if len == 0, stay at 0xffff, and no write
 
-    uint16_t *mask_word_addr = ((uint16_t *)MASK_ADDR) + loc->word_idx;
+    uint16_t *mask_word_addr = ((uint16_t *)FREE_MASK_ADDR) + loc->word_idx;
 
     LOG("FM: update mask: addr 0x%04x: %04x %04x\r\n",
         (uint16_t)mask_word_addr, first_mask_word, second_mask_word);
@@ -303,14 +296,14 @@ exit:
 
 bool flash_erase()
 {
-    LOG("FM: erasing seg at 0x%04x\r\n", (uint16_t)MASK_ADDR);
+    LOG("FM: erasing seg at 0x%04x\r\n", (uint16_t)FREE_MASK_ADDR);
 
     __disable_interrupt();
     // msp_watchdog_disable(); // TODO
 
     FCTL3 = FWPW; // clear LOCK (and LOCKA)
     FCTL1 = FWPW | ERASE; // segment erase mode
-    *MASK_ADDR = 0; // dummy write to trigger erase
+    *FREE_MASK_ADDR = 0; // dummy write to trigger erase
     while (FCTL3 & BUSY);
     FCTL3 = FWPW | LOCK;
 

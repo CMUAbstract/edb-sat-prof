@@ -90,6 +90,9 @@ export LIBSPRITE_PRN_1 = 267
 export LIBCAPYBARA_PIN_VBOOST_OK = 2.0
 export LIBCAPYBARA_PIN_BOOST_SW = J.0
 
+export FLASH_STORAGE_SEGMENT = 0x1900
+export FLASH_STORAGE_SEGMENT_SIZE = 128
+
 include ../Makefile.config
 
 # To build the dependee that uses the headers, we need the config macros here
