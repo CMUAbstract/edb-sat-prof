@@ -372,7 +372,7 @@ int main(void)
     pkt_desc_union_t pkt_desc = { .typed = { /* header union = */
                                              { .typed = { PKT_TYPE_ENERGY_PROFILE, PKT_FLAG_NOT_SENT, PROFILE_SIZE } },
                                              /* chksum header = */ 0, /* chksum payload = */ 0 } };
-    LOG("saving profile to flash, checksuming");
+    LOG("saving profile to flash, checksuming\r\n");
 
     CRCINIRES = 0x0000; // init value for checksum
     CRCDI = pkt_desc.typed.header.raw;
