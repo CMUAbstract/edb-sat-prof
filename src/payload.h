@@ -17,18 +17,29 @@ typedef enum {
     PKT_FLAG_NOT_SENT           = 1,
 } pkt_flags_t;
 
-// Packet descriptor to hold info about a packet in NV memory
 typedef struct {
         pkt_type_t type:2;
         pkt_flags_t flags:2;
         uint8_t size:4; // bytes
+} pkt_header_t;
+
+typedef union {
+    pkt_header_t typed;
+    uint8_t raw;
+} pkt_header_union_t;
+
+// Packet descriptor to hold info about a packet in NV memory
+typedef struct {
+        pkt_header_union_t header;
+        uint8_t chksum_header:4;
+        uint8_t chksum_payload:4;
 } pkt_desc_t;
 
 typedef union {
     pkt_desc_t typed;
-    uint8_t raw;
+    uint16_t raw;
 } pkt_desc_union_t;
-#define PAYLOAD_DESC_SIZE 1 // bytes
+#define PAYLOAD_DESC_SIZE 2 // bytes
 
 /*
  * @brief Aggregate data packet sent from sprite to host/ground
