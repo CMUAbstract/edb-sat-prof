@@ -240,6 +240,11 @@ bool flash_write(uint8_t *dest, uint8_t *data, unsigned len)
         *dest = b;
         FCTL1 = FWPW; // clear write
 
+        if (FCTL3 & ACCVIFG) {
+            success = false;
+            goto exit;
+        }
+
         ++dest;
         ++data;
 
