@@ -122,11 +122,6 @@ int main(void)
 	msp_watchdog_disable();
 #endif // !CONFIG_WATCHDOG
 
-#if 1 // TODO: temporary -- turn on APP MCU
-    GPIO(PORT_APP_SW, OUT) |= BIT(PIN_APP_SW);
-    GPIO(PORT_APP_SW, DIR) |= BIT(PIN_APP_SW);
-#endif
-
 #if 0 // NOP main: sleep forever
     __disable_interrupt();
     while (1) {
@@ -320,7 +315,10 @@ int main(void)
         }
     }
 
-    LOG("collect profile\r\n");
+    LOG("collect profile: turn on app supply\r\n");
+
+    GPIO(PORT_APP_SW, OUT) |= BIT(PIN_APP_SW);
+    GPIO(PORT_APP_SW, DIR) |= BIT(PIN_APP_SW);
 
     LOG("check space in flash\r\n");
     flash_loc_t loc;
@@ -332,6 +330,9 @@ int main(void)
 
     LOG("start profiling\r\n");
     collect_profile();
+
+    LOG("profiling stopped: turn off app supply\r\n");
+    GPIO(PORT_APP_SW, OUT) &= ~BIT(PIN_APP_SW);
 
     pkt_desc_t pkt_desc = { PKT_TYPE_ENERGY_PROFILE, PKT_FLAG_NOT_SENT, PROFILE_SIZE };
     LOG("saving profile to flash: ");
