@@ -16,7 +16,7 @@ profile_t profile;
 volatile bool profiling_vcap_ok = false;
 volatile bool profiling_overflow = false;
 
-static void arm_vcap_comparator()
+static bool arm_vcap_comparator()
 {
     // Configure comparator to interrupt when Vcap drops below a threshold
     COMP_VBANK(CTL3) |= COMP2_VBANK(PD, COMP_CHAN_VBANK);
@@ -27,9 +27,16 @@ static void arm_vcap_comparator()
     // Turn comparator on in ultra-low power mode
     COMP_VBANK(CTL1) |= COMP_VBANK(PWRMD_2) | COMP_VBANK(ON);
 
+    if (COMP_VBANK(CTL1) & COMP_VBANK(OUT)) {
+        // Vcap already below threshold
+        return false;
+    }
+
     // Clear int flag and enable int
     COMP_VBANK(INT) &= ~(COMP_VBANK(IFG) | COMP_VBANK(IIFG));
     COMP_VBANK(INT) |= COMP_VBANK(IE);
+
+    return true;
 }
 
 static void toggle_watchpoints(bool enable)
@@ -42,8 +49,7 @@ void collect_profile()
 {
     memset(&profile, 0, sizeof(profile_t));
 
-    profiling_vcap_ok = true;
-    arm_vcap_comparator();
+    profiling_vcap_ok = arm_vcap_comparator();
 
     edb_set_watchpoint_callback(profile_event);
     toggle_watchpoints(true);
