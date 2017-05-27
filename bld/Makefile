@@ -30,6 +30,8 @@ export PIN_VBANK = 2.4 # divided Vbank voltage
 export COMP_CHAN_VBANK = B.4 # comparator channel for Vbank voltage
 export VBANK_DIV = 100:750 # adjusted for Rin of comparator
 
+export CLOCK_FREQ_ACLK = 32768 # Hz
+
 # Setpoint of voltage supply to EDB MCU (set by resistor divider in hardware)
 export VDD_EDB = 2.4 # V
 # Stop profiling when supercap voltage drops below this threshold
@@ -64,6 +66,9 @@ export LIBMSP_DCO_REF_SOURCE = REFO
 export LIBMSP_DCO_REF_CLOCK_DIV = 1
 export LIBMSP_DCO_FREQ = 8192000ull
 export LIBMSP_CORE_VOLTAGE_LEVEL = 2
+
+export LIBMSP_SLEEP_TIMER = A.1.0
+export LIBMSP_SLEEP_TIMER_CLK = ACLK
 
 export LIBMSPSOFTUART_PORT_TX = 3.1
 export LIBMSPSOFTUART_BAUDRATE = 115200
