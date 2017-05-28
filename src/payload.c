@@ -235,7 +235,7 @@ bool transmit_saved_payload()
     }
     LOG("pkt header valid\r\n");
 
-    if (saved_pkt_header.flags & PKT_FLAG_NOT_SENT) {
+    if (!(saved_pkt_header.flags & PKT_FLAG_NOT_SENT)) {
         LOG("pkt already marked sent\r\n");
         return false;
     }
