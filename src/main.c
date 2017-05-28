@@ -285,8 +285,12 @@ int main(void)
     payload_init();
 
 #if 1
-    if (!transmit_saved_payload()) {
+    if (transmit_saved_payload()) {
+        LOG("saved pkt transmitted: shutting down\r\n");
+        capybara_shutdown(); // we're out of energy after any transmission
+    } else {
         LOG("no saved payload found in flash\r\n");
+        // move on, collect some data
     }
 
     LOG("collect profile: turn on app supply\r\n");
