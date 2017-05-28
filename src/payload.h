@@ -7,6 +7,8 @@
 #include "profile.h"
 #endif
 
+#include "flash.h"
+
 typedef enum {
     PKT_TYPE_BEACON             = 1,
     PKT_TYPE_APP_OUTPUT         = 2,
@@ -71,5 +73,8 @@ void payload_record_app_output(const uint8_t *data, unsigned len);
 #endif
 
 void send_payload(payload_t *payload);
+
+flash_status_t save_payload(flash_loc_t *loc, pkt_type_t pkt_type, uint8_t *pkt_data, unsigned len);
+bool transmit_saved_payload();
 
 #endif // PAYLOAD_H

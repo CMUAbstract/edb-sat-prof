@@ -9,6 +9,12 @@ typedef struct {
     uint8_t bit_idx;
 } flash_loc_t;
 
+typedef enum {
+    FLASH_STATUS_OK = 0,
+    FLASH_STATUS_ALLOC_FAILED = 1,
+    FLASH_STATUS_WRITE_FAILED = 2,
+} flash_status_t;
+
 bool flash_find_space(unsigned len, flash_loc_t *loc);
 uint8_t *flash_alloc(flash_loc_t *loc, unsigned len);
 uint8_t *flash_find_last_byte();
