@@ -143,7 +143,7 @@ bool flash_write_byte(uint8_t *addr, uint8_t byte)
     LOG("FM: write byte: 0x%04x <- 0x%02x\r\n", (uint16_t)addr, byte);
 
     __disable_interrupt();
-    // msp_watchdog_disable(); // TODO
+    msp_watchdog_hold();
 
     FCTL3 = FWPW; // clear LOCK (and LOCKA)
     FCTL1 = FWPW | WRT; // word/byte write
@@ -153,7 +153,7 @@ bool flash_write_byte(uint8_t *addr, uint8_t byte)
     FCTL1 = FWPW; // clear write
     FCTL3 = FWPW | LOCK; // lock
 
-    // msp_watchdog_enable(CONFIG_WDT_BITS);  // TODO
+    msp_watchdog_release();
     __enable_interrupt();
 
     if (FCTL3 & ACCVIFG) {
@@ -170,7 +170,7 @@ bool flash_write_word(uint16_t *addr, uint16_t word)
     LOG("FM: write word: 0x%04x <- 0x%04x\r\n", (uint16_t)addr, word);
 
     __disable_interrupt();
-    // msp_watchdog_disable(); // TODO
+    msp_watchdog_hold();
 
     FCTL3 = FWPW; // clear LOCK (and LOCKA)
     FCTL1 = FWPW | WRT; // word/byte write
@@ -180,7 +180,7 @@ bool flash_write_word(uint16_t *addr, uint16_t word)
     FCTL1 = FWPW; // clear write
     FCTL3 = FWPW | LOCK; // lock
 
-    // msp_watchdog_enable(CONFIG_WDT_BITS);  // TODO
+    msp_watchdog_release();
     __enable_interrupt();
 
     if (FCTL3 & ACCVIFG) {
@@ -197,7 +197,7 @@ bool flash_write_long(uint16_t *addr, uint16_t hi, uint16_t lo)
     LOG("FM: write long: 0x%04x <- 0x%04x%04x\r\n", (uint16_t)addr, hi, lo);
 
     __disable_interrupt();
-    // msp_watchdog_disable(); // TODO
+    msp_watchdog_hold();
 
     FCTL3 = FWPW; // clear LOCK (and LOCKA)
     FCTL1 = FWPW | BLKWRT; // long write
@@ -211,7 +211,7 @@ bool flash_write_long(uint16_t *addr, uint16_t hi, uint16_t lo)
     FCTL1 = FWPW; // clear write
     FCTL3 = FWPW | LOCK; // lock
 
-    // msp_watchdog_enable(CONFIG_WDT_BITS);  // TODO
+    msp_watchdog_release();
     __enable_interrupt();
 
     if (FCTL3 & ACCVIFG) {
@@ -236,7 +236,7 @@ bool flash_write(uint8_t *dest, uint8_t *data, unsigned len)
     bool success = true;
 
     __disable_interrupt();
-    // msp_watchdog_disable(); // TODO
+    msp_watchdog_hold();
 
 
     // Write the first byte to align onto word boundary
@@ -301,7 +301,7 @@ bool flash_write(uint8_t *dest, uint8_t *data, unsigned len)
 
 exit:
 
-    // msp_watchdog_enable(CONFIG_WDT_BITS);  // TODO
+    msp_watchdog_release();
     __enable_interrupt();
 
     if (success)
@@ -317,7 +317,7 @@ bool flash_erase()
     LOG("FM: erasing seg at 0x%04x\r\n", (uint16_t)FREE_MASK_ADDR);
 
     __disable_interrupt();
-    // msp_watchdog_disable(); // TODO
+    msp_watchdog_hold();
 
     FCTL3 = FWPW; // clear LOCK (and LOCKA)
     FCTL1 = FWPW | ERASE; // segment erase mode
@@ -325,7 +325,7 @@ bool flash_erase()
     while (FCTL3 & BUSY);
     FCTL3 = FWPW | LOCK;
 
-    // msp_watchdog_enable(CONFIG_WDT_BITS);  // TODO
+    msp_watchdog_release();
     __enable_interrupt();
 
     if (FCTL3 & ACCVIFG) {
