@@ -26,8 +26,7 @@
 
 #define CONFIG_MAIN_LOOP_SLEEP_STATE LPM0_bits
 
-/** @brief Watchdog configuration */
-#define CONFIG_WDT_BITS (WDTSSEL__ACLK | WDTIS__8192K) // 4 minutes
+#define CONFIG_WDT_BITS WATCHDOG_BITS(WATCHDOG_CLOCK, WATCHDOG_INTERVAL)
 
 typedef enum {
     TASK_BEACON = 0,

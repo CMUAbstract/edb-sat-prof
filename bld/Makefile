@@ -25,6 +25,9 @@ export CONFIG_TARGET_COMM_TIMEOUT = 0xff
 export CONFIG_ENERGY_PROFILE_MIN_VOLTAGE = 3276
 export CONFIG_PROFILE_SUB_BYTE_BUCKET_SIZES = 0
 
+export WATCHDOG_CLOCK = ACLK
+export WATCHDOG_INTERVAL = 8192K # 4 minutes
+
 export PIN_APP_SW = 3.7 # APP power rail switch
 export PIN_VBANK = 2.4 # divided Vbank voltage
 export COMP_CHAN_VBANK = B.4 # comparator channel for Vbank voltage
