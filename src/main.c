@@ -309,7 +309,7 @@ int main(void)
         LOG("hdr chksum saved: %02x %02x\r\n", saved_pkt_desc.header.raw, saved_pkt_desc.chksum.header);
         LOG("hdr chksum vals : %02x %02x\r\n", unsent_pkt_header.raw, saved_pkt_desc.chksum.header);
 
-        CRCINIRES = 0x0000; // init value for checksum
+        CRCINIRES = 0xFFFF; // init value for checksum
         CRCDI = unsent_pkt_header.raw;
         if ((CRCINIRES & 0x0f) != saved_pkt_desc.chksum.header) {
             LOG("pkt header checksum mismatch: igoring pkt\r\n");
@@ -325,7 +325,7 @@ int main(void)
                 }
                 LOG("\r\n");
 
-                CRCINIRES = 0x0000; // init value for checksum
+                CRCINIRES = 0xFFFF; // init value for checksum
                 for(int i = 0; i < saved_pkt_header.size; ++i) {
                     CRCDI = *(saved_pkt_addr + i);
                 }
@@ -372,11 +372,11 @@ int main(void)
                                              /* chksum */ { /* chksum header */ 0, /* chksum payload */ 0 } } };
     LOG("saving profile to flash, checksuming\r\n");
 
-    CRCINIRES = 0x0000; // init value for checksum
+    CRCINIRES = 0xFFFF; // init value for checksum
     CRCDI = pkt_desc.typed.header.raw;
     pkt_desc.typed.chksum.header = CRCINIRES & 0x0f;
 
-    CRCINIRES = 0x0000; // init value for checksum
+    CRCINIRES = 0xFFFF; // init value for checksum
     for (int i = 0; i < PROFILE_SIZE; ++i)
          CRCDI = *((uint8_t *)&profile + i);
     pkt_desc.typed.chksum.payload = CRCINIRES & 0x0f;
