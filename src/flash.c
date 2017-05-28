@@ -274,6 +274,7 @@ bool flash_write(uint8_t *dest, uint8_t *data, unsigned len)
         }
 
         ++dest_w;
+        ++data_w;
         len -= 2;
     }
 
