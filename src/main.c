@@ -169,7 +169,7 @@ int main(void)
 
     __enable_interrupt();
 
-    LOG("EDBsat v1.1 - EDB MCU\r\n");
+    LOG("EDBsat v1.2 - EDB MCU\r\n");
 
 
 #if 1
