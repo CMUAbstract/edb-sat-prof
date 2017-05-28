@@ -70,7 +70,7 @@ void payload_init()
 
 void payload_send_beacon()
 {
-    uint8_t pkt = (PKT_TYPE_BEACON << 4) | 0x0E;
+    uint8_t pkt = 0xED;
 
     log_packet('B', 0, &pkt, sizeof(pkt));
 
