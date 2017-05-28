@@ -238,15 +238,16 @@ bool flash_write(uint8_t *dest, uint8_t *data, unsigned len)
     __disable_interrupt();
     // msp_watchdog_disable(); // TODO
 
-    FCTL3 = FWPW; // clear LOCK (and LOCKA)
 
     // Write the first byte to align onto word boundary
     if (len > 0 && (uint16_t)dest & 0x1) {
         uint8_t b = *data;
 
+        FCTL3 = FWPW; // clear LOCK (and LOCKA)
         FCTL1 = FWPW | WRT; // byte write
         *dest = b;
         FCTL1 = FWPW; // clear write
+        FCTL3 = FWPW | LOCK; // lock
 
         if (FCTL3 & ACCVIFG) {
             success = false;
@@ -264,9 +265,11 @@ bool flash_write(uint8_t *dest, uint8_t *data, unsigned len)
     while (len >= 2) {
         uint16_t w = *data_w;
 
+        FCTL3 = FWPW; // clear LOCK (and LOCKA)
         FCTL1 = FWPW | WRT; // word write
         *dest_w = w;
         FCTL1 = FWPW; // clear write
+        FCTL3 = FWPW | LOCK; // lock
 
         if (FCTL3 & ACCVIFG) {
             success = false;
@@ -284,9 +287,11 @@ bool flash_write(uint8_t *dest, uint8_t *data, unsigned len)
 
         uint8_t b = *data;
 
+        FCTL3 = FWPW; // clear LOCK (and LOCKA)
         FCTL1 = FWPW | WRT; // byte write
         *dest = b;
         FCTL1 = FWPW; // clear write
+        FCTL3 = FWPW | LOCK; // lock
 
         if (FCTL3 & ACCVIFG) {
             success = false;
@@ -295,7 +300,6 @@ bool flash_write(uint8_t *dest, uint8_t *data, unsigned len)
     }
 
 exit:
-    FCTL3 = FWPW | LOCK; // lock
 
     // msp_watchdog_enable(CONFIG_WDT_BITS);  // TODO
     __enable_interrupt();
