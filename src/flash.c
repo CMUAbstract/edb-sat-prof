@@ -8,6 +8,7 @@
 #include <libio/log.h>
 
 #include "flash.h"
+#include "bits.h"
 
 // Number of words reserved for the free-block bitmask
 #define FREE_MASK_WORDS 7
@@ -25,17 +26,6 @@ static void print_mask()
         LOG("%02x ", *(FREE_MASK_ADDR + i));
     }
     LOG("\r\n");
-}
-
-static unsigned find_first_set_bit_in_word(uint16_t word)
-    // precondition: word != 0
-{
-    LOG("FM: find first bit in 0x%04x\r\n", word);
-    unsigned b = 0;
-    while (b < 16 && !(word & (1 << (15 - b)))) // can drop b < 16, given precond
-        ++b;
-    LOG("FM: bit %u\r\n", b);
-    return b;
 }
 
 static unsigned find_first_set_word_in_mask()

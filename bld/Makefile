@@ -5,6 +5,7 @@ OBJECTS = \
 	payload.o \
 	profile.o \
 	flash.o \
+	bits.o \
 
 DEPS += \
 	libmsp \
