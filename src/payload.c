@@ -20,6 +20,7 @@
 
 #include "payload.h"
 #include "flash.h"
+#include "bits.h"
 
 // TODO: HACK
 // From app: must match!
@@ -162,37 +163,64 @@ void send_payload(payload_t *payload)
 }
 #endif // CONFIG_SEND_PAYLOAD_TO_HOST
 
+bool send_pkt(rad_pkt_union_t *pkt)
+{
+    CRCINIRES = 0xFFFF; // init value for checksum
+    CRCDI = pkt->raw & RAD_PKT_CHKSUM_MASK; // mask chksum just in case caller didn't zero it
+    pkt->typed.chksum = CRCINIRES & RAD_PKT_CHKSUM_MASK;
+    LOG("rad pkt chksum: %02x\r\n", pkt->typed.chksum);
+    LOG("trasmiting pkt: 0x%04x\r\n", pkt->raw);
+
+#if 0 // TODO
+    SpriteRadio_txInit();
+    SpriteRadio_transmit((uint8_t *)pkt, sizeof(rad_pkt_t));
+    SpriteRadio_sleep();
+#endif
+
+    LOG("trasmit finished\r\n");
+    return true;
+}
+
 // 'loc' must be the result of a successful call to flash_find_space()
 // Len < 2^16
 flash_status_t save_payload(flash_loc_t *loc, pkt_type_t pkt_type, uint8_t *pkt_data, unsigned len)
 {
-    pkt_desc_union_t pkt_desc = { .typed = { /* header union = */
-                                             { .typed = { pkt_type, PKT_FLAG_NOT_SENT, len} },
-                                             /* chksum */ { /* chksum header */ 0, /* chksum payload */ 0 } } };
-
-    CRCINIRES = 0xFFFF; // init value for checksum
-    CRCDI = pkt_desc.typed.header.raw;
-    pkt_desc.typed.chksum.header = CRCINIRES & 0x0f;
+    pkt_desc_union_t pkt_desc = { .typed = { .sent_mask = 0xFFFF >> (16 - len),
+                                             .header = { .typed = { .type = pkt_type,
+                                                                    .size = len,
+                                                                    .padded = (loc->bit_idx & 0x1) ^ (len & 0x1),
+                                                                    .pay_chksum = 0,
+                                                                    .hdr_chksum = 0,
+                                                                } } } };
 
     CRCINIRES = 0xFFFF; // init value for checksum
     for (int i = 0; i < len; ++i)
          CRCDI = *(pkt_data + i);
-    pkt_desc.typed.chksum.payload = CRCINIRES & 0x0f;
+    pkt_desc.typed.header.typed.pay_chksum = CRCINIRES & 0x0f;
+    LOG("payload chksum: %02x\r\n", pkt_desc.typed.header.typed.pay_chksum);
+
+    CRCINIRES = 0xFFFF; // init value for checksum
+    CRCDI = pkt_desc.typed.header.raw;
+    pkt_desc.typed.header.typed.hdr_chksum = CRCINIRES & 0x0f;
+    LOG("hdr chksum: %02x\r\n", pkt_desc.typed.header.typed.hdr_chksum);
 
     LOG("saving pkt to flash: \r\n");
     for (int i = 0; i < len; ++i) {
         LOG("%02x ", *(pkt_data + i));
     }
-    LOG("(%04x)\r\n", pkt_desc.raw);
+    LOG("(%04x %04x)\r\n", (uint16_t)(pkt_desc.raw >> 16), (uint16_t)(pkt_desc.raw & 0xffff));
 
-    uint8_t *pkt_saved = flash_alloc(loc, len + PAYLOAD_DESC_SIZE);
+    unsigned padded = pkt_desc.typed.header.typed.padded;
+    uint8_t *pkt_saved = flash_alloc(loc, len + padded + PAYLOAD_DESC_SIZE);
     if (!pkt_saved) {
         return FLASH_STATUS_ALLOC_FAILED;
     }
+    uint8_t *desc_addr = pkt_saved + len + padded;
+    // assert !(desc_addr & 0x1) [word aligned]
     if (!flash_write(pkt_saved, (uint8_t *)&profile, len)) {
         return FLASH_STATUS_WRITE_FAILED;
     }
-    if (!flash_write(pkt_saved + len, (uint8_t *)&pkt_desc.raw, PAYLOAD_DESC_SIZE)) {
+    if (!flash_write(desc_addr, (uint8_t *)&pkt_desc.raw, PAYLOAD_DESC_SIZE)) {
         return FLASH_STATUS_WRITE_FAILED;
     }
 
@@ -211,35 +239,31 @@ bool transmit_saved_payload()
     saved_pkt_desc_addr -= PAYLOAD_DESC_SIZE - 1; // move to first byte of the pkt descriptor
 
     pkt_desc_union_t saved_pkt_desc_union;
-    saved_pkt_desc_union.raw = *(uint16_t *)saved_pkt_desc_addr; // read from flash
+    saved_pkt_desc_union.raw = AS_PKT_DESC(saved_pkt_desc_addr); // read from flash
     pkt_desc_t saved_pkt_desc = saved_pkt_desc_union.typed;
     pkt_header_t saved_pkt_header = saved_pkt_desc.header.typed;
 
-    LOG("pkt descriptor: 0x%04x: type %u flags 0x%x size %u | chksum: hdr %x payload %x\r\n",
-        saved_pkt_desc_union.raw,
-        saved_pkt_header.type, saved_pkt_header.flags, saved_pkt_header.size,
-        saved_pkt_desc.chksum.header, saved_pkt_desc.chksum.payload);
-
-    // Checksum is not updated after sending the packet and flipping the flag
-    pkt_header_union_t unsent_pkt_header = { .typed = saved_pkt_header };
-    unsent_pkt_header.typed.flags |= PKT_FLAG_NOT_SENT;
-
-    LOG("hdr chksum saved: %02x %02x\r\n", saved_pkt_desc.header.raw, saved_pkt_desc.chksum.header);
-    LOG("hdr chksum vals : %02x %02x\r\n", unsent_pkt_header.raw, saved_pkt_desc.chksum.header);
+    LOG("pkt descriptor: %04x %04x: type %u size %u pad %u | chksum: payload %x hdr %x\r\n",
+        (uint16_t)(saved_pkt_desc_union.raw >> 16), (uint16_t)(saved_pkt_desc_union.raw & 0xFFFF),
+        saved_pkt_header.type, saved_pkt_header.size, saved_pkt_header.padded,
+        saved_pkt_header.pay_chksum, saved_pkt_header.hdr_chksum);
 
     CRCINIRES = 0xFFFF; // init value for checksum
-    CRCDI = unsent_pkt_header.raw;
-    if ((CRCINIRES & 0x0f) != saved_pkt_desc.chksum.header) {
-        LOG("pkt header checksum mismatch: igoring pkt\r\n");
+    CRCDI = PKT_HDR_DATA(saved_pkt_desc.header.raw);
+    unsigned hdr_chksum = CRCINIRES & 0x0f;
+    if (hdr_chksum != saved_pkt_header.hdr_chksum) {
+        LOG("pkt header checksum mismatch (%02x != %02x): igoring pkt\r\n",
+            hdr_chksum, saved_pkt_header.hdr_chksum);
         return false;
     }
     LOG("pkt header valid\r\n");
 
-    if (!(saved_pkt_header.flags & PKT_FLAG_NOT_SENT)) {
+    if (!saved_pkt_desc.sent_mask) {
         LOG("pkt already marked sent\r\n");
         return false;
     }
-    uint8_t *saved_pkt_addr = ((uint8_t*)saved_pkt_desc_addr) - saved_pkt_header.size;
+
+    uint8_t *saved_pkt_addr = ((uint8_t*)saved_pkt_desc_addr) - saved_pkt_header.size - saved_pkt_header.padded;
 
     LOG("pkt payload (addr 0x%04x len %u): ", (uint16_t)saved_pkt_addr, saved_pkt_header.size);
     for(int i = 0; i < saved_pkt_header.size; ++i) {
@@ -251,20 +275,34 @@ bool transmit_saved_payload()
     for(int i = 0; i < saved_pkt_header.size; ++i) {
         CRCDI = *(saved_pkt_addr + i);
     }
-    if ((CRCINIRES & 0x0f) != saved_pkt_desc.chksum.payload) {
-        LOG("payload checksum mismatch: ignoring pkt\r\n");
+    unsigned pay_chksum = CRCINIRES & 0x0f;
+    if (pay_chksum != saved_pkt_header.pay_chksum) {
+        LOG("payload checksum mismatch (%02x != %02x): ignoring pkt\r\n",
+            pay_chksum, saved_pkt_header.pay_chksum);
         return false;
     }
 
-    // TODO: transmit pkt
-    LOG("TODO: transmit pkt\r\n");
+    unsigned sent_mask_offset = 16 - saved_pkt_header.size;
+    uint8_t unsent_byte_idx = find_first_set_bit_in_word(saved_pkt_desc.sent_mask) - sent_mask_offset;
+    // assert unsent_byte_idx < 16 because we checked for zero above
+    LOG("unsent byte idx: %u\r\n", unsent_byte_idx);
+    uint8_t payload_byte = *(saved_pkt_addr + unsent_byte_idx);
 
-    pkt_header_union_t sent_header = { .typed = saved_pkt_header };
-    sent_header.typed.flags &= ~PKT_FLAG_NOT_SENT;
+    rad_pkt_union_t pkt = { .typed = {
+        .chksum = 0,
+        .type = saved_pkt_header.type,
+        .idx = unsent_byte_idx,
+        .payload_byte = payload_byte
+    } };
+    if (!send_pkt(&pkt)) {
+        LOG("failed to send pkt\r\n");
+        return false;
+    }
 
-    LOG("markig pkt at 0x%04x as sent: hdr 0x%02x\r\n", (uint16_t)saved_pkt_desc_addr, sent_header.raw);
-    flash_write_byte((uint8_t *)saved_pkt_desc_addr, sent_header.raw);
-    LOG("pkt header: @0x%04x [0x%02x]\r\n", (uint16_t)saved_pkt_desc_addr, *(uint8_t *)saved_pkt_desc_addr);
+    saved_pkt_desc.sent_mask &= ~(1 << (15 - sent_mask_offset - unsent_byte_idx));
+    LOG("markig pkt at 0x%04x as sent: sent mask 0x%04x\r\n", (uint16_t)saved_pkt_desc_addr, saved_pkt_desc.sent_mask);
+    flash_write_word((uint16_t *)saved_pkt_desc_addr, saved_pkt_desc.sent_mask);
+    LOG("updated sent mask: @0x%04x [0x%04x]\r\n", (uint16_t)saved_pkt_desc_addr, *(uint16_t *)saved_pkt_desc_addr);
 
     return true;
 }
