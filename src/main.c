@@ -301,20 +301,19 @@ int main(void)
         LOG("pkt descriptor: 0x%04x: type %u flags 0x%x size %u | chksum: hdr %x payload %x\r\n",
             saved_pkt_desc_union.raw,
             saved_pkt_header.type, saved_pkt_header.flags, saved_pkt_header.size,
-            saved_pkt_desc.chksum_header, saved_pkt_desc.chksum_payload);
-        LOG("pkt descriptor: chksum: hdr %x payload %x\r\n",
-            saved_pkt_desc_union.typed.chksum_header,
-            saved_pkt_desc_union.typed.chksum_payload);
+            saved_pkt_desc.chksum.header, saved_pkt_desc.chksum.payload);
 
         // Checksum is not updated after sending the packet and flipping the flag
         pkt_header_union_t unsent_pkt_header = { .typed = saved_pkt_header };
         unsent_pkt_header.typed.flags |= PKT_FLAG_NOT_SENT;
 
+        LOG("hdr chksum saved: %02x %02x\r\n", saved_pkt_desc.header.raw, saved_pkt_desc.chksum.header);
+        LOG("hdr chksum vals : %02x %02x\r\n", unsent_pkt_header.raw, saved_pkt_desc.chksum.header);
+
         CRCINIRES = 0x0000; // init value for checksum
         CRCDI = unsent_pkt_header.raw;
-        CRCDI = saved_pkt_desc.chksum_header;
-        if (CRCINIRES != 0) {
-            LOG("pkt header checksum mismatch: ingoring\r\n");
+        if ((CRCINIRES & 0x0f) != saved_pkt_desc.chksum.header) {
+            LOG("pkt header checksum mismatch: igoring pkt\r\n");
         } else { // valid header
             LOG("pkt header valid\r\n");
 
@@ -331,21 +330,21 @@ int main(void)
                 for(int i = 0; i < saved_pkt_header.size; ++i) {
                     CRCDI = *(saved_pkt_addr + i);
                 }
-                CRCDI = saved_pkt_desc.chksum_payload;
-                if (CRCINIRES != 0) {
-                    LOG("payload checksum mismatch\r\n");
-                    capybara_shutdown();
+                if ((CRCINIRES & 0x0f) != saved_pkt_desc.chksum.payload) {
+                    LOG("payload checksum mismatch: ignoring pkt\r\n");
+                } else {
+
+                    // TODO: transmit pkt
+                    LOG("TODO: transmit pkt\r\n");
+
+                    pkt_header_union_t sent_header = { .typed = saved_pkt_header };
+                    sent_header.typed.flags &= ~PKT_FLAG_NOT_SENT;
+
+                    LOG("markig pkt at 0x%04x as sent: hdr 0x%02x\r\n", (uint16_t)saved_pkt_desc_addr, sent_header.raw);
+                    flash_write_byte((uint8_t *)saved_pkt_desc_addr, sent_header.raw);
+                    LOG("pkt header: @0x%04x [0x%02x]\r\n", (uint16_t)saved_pkt_desc_addr, *(uint8_t *)saved_pkt_desc_addr);
+
                 }
-
-                // TODO: transmit pkt
-                LOG("TODO: transmit pkt\r\n");
-
-                pkt_header_union_t sent_header = { .typed = saved_pkt_header };
-                sent_header.typed.flags &= ~PKT_FLAG_NOT_SENT;
-
-                LOG("markig pkt at 0x%04x as sent: hdr 0x%02x\r\n", (uint16_t)saved_pkt_desc_addr, sent_header.raw);
-                flash_write_byte((uint8_t *)saved_pkt_desc_addr, sent_header.raw);
-                LOG("pkt header: @0x%04x [0x%02x]\r\n", (uint16_t)saved_pkt_desc_addr, *(uint8_t *)saved_pkt_desc_addr);
             }
         }
     }
@@ -371,17 +370,17 @@ int main(void)
 
     pkt_desc_union_t pkt_desc = { .typed = { /* header union = */
                                              { .typed = { PKT_TYPE_ENERGY_PROFILE, PKT_FLAG_NOT_SENT, PROFILE_SIZE } },
-                                             /* chksum header = */ 0, /* chksum payload = */ 0 } };
+                                             /* chksum */ { /* chksum header */ 0, /* chksum payload */ 0 } } };
     LOG("saving profile to flash, checksuming\r\n");
 
     CRCINIRES = 0x0000; // init value for checksum
     CRCDI = pkt_desc.typed.header.raw;
-    pkt_desc.typed.chksum_header = CRCINIRES & 0x0f;
+    pkt_desc.typed.chksum.header = CRCINIRES & 0x0f;
 
     CRCINIRES = 0x0000; // init value for checksum
     for (int i = 0; i < PROFILE_SIZE; ++i)
          CRCDI = *((uint8_t *)&profile + i);
-    pkt_desc.typed.chksum_payload = CRCINIRES & 0x0f;
+    pkt_desc.typed.chksum.payload = CRCINIRES & 0x0f;
 
     LOG("profile data: ");
     for (int i = 0; i < PROFILE_SIZE; ++i) {

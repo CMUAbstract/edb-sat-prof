@@ -17,25 +17,29 @@ typedef enum {
     PKT_FLAG_NOT_SENT           = 1,
 } pkt_flags_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
         pkt_type_t type:2;
         pkt_flags_t flags:2;
-        uint8_t size:4; // bytes
+        unsigned size:4; // bytes
 } pkt_header_t;
 
-typedef union {
+typedef union __attribute__((packed)) {
     pkt_header_t typed;
     uint8_t raw;
 } pkt_header_union_t;
 
+typedef struct __attribute__((packed)) {
+    uint8_t header:4;
+    uint8_t payload:4;
+} pkt_chksum_t;
+
 // Packet descriptor to hold info about a packet in NV memory
-typedef struct {
+typedef struct __attribute__((packed)) {
         pkt_header_union_t header;
-        uint8_t chksum_header:4;
-        uint8_t chksum_payload:4;
+        pkt_chksum_t chksum;
 } pkt_desc_t;
 
-typedef union {
+typedef union __attribute__((packed)) {
     pkt_desc_t typed;
     uint16_t raw;
 } pkt_desc_union_t;
