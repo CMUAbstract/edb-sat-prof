@@ -9,6 +9,7 @@
 #include <libcapybara/capybara.h>
 #include <libio/log.h>
 
+#ifdef CONFIG_COLLECT_APP_OUTPUT
 #include <libedbserver/edb.h>
 #include <libedbserver/pin_assign.h>
 #include <libedbserver/host_comm.h>
@@ -17,6 +18,7 @@
 #include <libedbserver/sched.h>
 #include <libedbserver/codepoint.h>
 #include <libedbserver/tether.h>
+#endif // CONFIG_COLLECT_APP_OUTPUT
 
 #include "payload.h"
 #include "flash.h"
@@ -39,17 +41,13 @@ typedef enum {
 #ifdef CONFIG_COLLECT_APP_OUTPUT // TODO: a timeout should be applied to all target comms
 /* Whether timed out while communicating with target over UART */
 static bool target_comm_timeout;
-#endif // CONFIG_COLLECT_APP_OUTPUT
 
-#ifdef CONFIG_COLLECT_APP_OUTPUT
 static sched_cmd_t on_target_comm_timeout()
 {
     target_comm_timeout = true;
     return SCHED_CMD_WAKEUP;
 }
-#endif // CONFIG_COLLECT_APP_OUTPUT
 
-#ifdef CONFIG_COLLECT_APP_OUTPUT
 static void get_app_output()
 {
     LOG("interrupting target\r\n");
