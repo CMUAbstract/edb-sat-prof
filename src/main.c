@@ -125,34 +125,7 @@ int main(void)
     P3DIR |= BIT0 | BIT2 | BIT3;
 
     capybara_config_pins();
-
-#if 0
-    P3OUT |= BIT0;
-#if 0
-    // wait for voltage supervisor to indicate target voltage reached
-    // i.e. supercap is charged to 3.3v
-    P2IES &= ~(BIT1 | BIT2);
-    P2IFG &= ~(BIT1 | BIT2);
-    P2IE |= BIT1 | BIT2;
-    while ((P2IN & (BIT1 | BIT2)) != (BIT1 | BIT2) ) {
-        __enable_interrupt();
-        __bis_SR_register(LPM4_bits);
-    }
-    P2IE &= ~(BIT1 | BIT2);
-    P2IFG &= ~(BIT1 | BIT2);
-#else // wait for VBOOST_OK only, ignore VCAP state
-    __enable_interrupt();
-    P2IES &= ~BIT2;
-    P2IFG &= ~BIT2;
-    P2IE |= BIT2;
-    while (!(P2IN & BIT2)) {
-        __bis_SR_register(LPM4_bits);
-    }
-    P2IE &= ~BIT2;
-    P2IFG &= ~BIT2;
-#endif
-    P3OUT &= ~BIT0;
-#endif
+    capybara_wait_for_supply();
 
     msp_clock_setup(); // set up unified clock system
 
@@ -244,14 +217,18 @@ int main(void)
     capybara_shutdown();
 }
 
-void __attribute__ ((interrupt(PORT2_VECTOR))) P2_ISR (void)
+#define _THIS_PORT 2
+__attribute__ ((interrupt(GPIO_VECTOR(_THIS_PORT))))
+void  GPIO_ISR(_THIS_PORT) (void)
 {
-    unsigned flags = P2IFG;
-    if (flags & BIT1)
-        P2IFG &= ~BIT1;
-    if (flags & BIT2)
-        P2IFG &= ~BIT2;
-
-    // We were sleeping waiting for interrupt, so exit sleep
-    __bic_SR_register_on_exit(LPM4_bits);
+    switch (__even_in_range(INTVEC(_THIS_PORT), INTVEC_RANGE(_THIS_PORT))) {
+#if LIBCAPYBARA_PORT_VBOOST_OK == _THIS_PORT
+        case INTFLAG(LIBCAPYBARA_PORT_VBOOST_OK, LIBCAPYBARA_PIN_VBOOST_OK):
+            capybara_vboost_ok_isr();
+            break;
+#else
+#error Handler in wrong ISR: capybara_vboost_ok_isr
+#endif // LIBCAPYBARA_PORT_VBOOST_OK
+    }
 }
+#undef _THIS_PORT
