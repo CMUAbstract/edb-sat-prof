@@ -121,19 +121,13 @@ int main(void)
 	msp_watchdog_disable();
 #endif // !CONFIG_WATCHDOG
 
-#if 0 // NOP main: sleep forever
-    __disable_interrupt();
-    while (1) {
-        __bis_SR_register(LPM4_bits);
-    }
-#endif
-
     P3OUT &= ~(BIT0 | BIT2 | BIT3);
     P3DIR |= BIT0 | BIT2 | BIT3;
 
     capybara_config_pins();
 
 #if 0
+    P3OUT |= BIT0;
 #if 0
     // wait for voltage supervisor to indicate target voltage reached
     // i.e. supercap is charged to 3.3v
@@ -157,9 +151,8 @@ int main(void)
     P2IE &= ~BIT2;
     P2IFG &= ~BIT2;
 #endif
-#endif
-
     P3OUT &= ~BIT0;
+#endif
 
     msp_clock_setup(); // set up unified clock system
 
@@ -181,100 +174,6 @@ int main(void)
     LOG("EDB server done\r\n");
 #endif
 
-#if 0 // testing reading VDD_AP through a divider
-    // Set pin to ADC mode
-    P2MAP4 = 31;
-    P2SEL |= BIT4;
-
-    ADC12CTL0 |= ADC12ON;
-
-    while (1) {
-        //Reset the ENC bit to set the starting memory address and conversion mode sequence
-        ADC12CTL0 &= ~(ADC12ENC);
-
-        REFCTL0 |= REFMSTR | REFTCOFF; // use reference control bits in REF, disable temp sensor
-        REFCTL0 |= REFON; // turn on reference (TODO: is this needed? or will ADC turn it on on demand?)
-
-        ADC12CTL1 |= ADC12SHP;
-        ADC12CTL0 |= ADC12SHT0_15 | ADC12SHT1_15;
-        ADC12MCTL0 |= 0x4 | ADC12SREF_1 | ADC12EOS; // channel A4
-
-        //Reset the bits about to be set
-        ADC12CTL1 &= ~(ADC12CONSEQ_3);
-
-        ADC12CTL0 |= ADC12ENC + ADC12SC;
-
-        for (int i = 0; i < 0xff; ++i) {
-            __delay_cycles(0xffff);
-        }
-
-        uint16_t vdd_ap = ADC12MEM0;
-        PRINTF("V=%u B=%u I=%x\r\n", vdd_ap, (ADC12CTL1 & ADC12BUSY), ADC12IFG);
-    }
-#endif
-
-
-#if 0
-    LOG("radio init\r\n");
-    SpriteRadio_SpriteRadio();
-
-    while (1) {
-
-#if 0
-        if (P2IN & BIT2) {
-#endif
-
-            LOG("tx start\r\n");
-            P3OUT |= BIT2;
-
-            static char pkt[1] = { 0xED };
-
-            SpriteRadio_txInit();
-            SpriteRadio_transmit(&pkt[0], 1);
-            SpriteRadio_sleep();
-
-            P3OUT &= ~BIT2;
-            LOG("tx end\r\n");
-
-#if 1 // disable booster, go to sleep to charge
-            LOG("shutdown\r\n");
-            GPIO(PORT_BOOST_SW, OUT) |= BIT(PIN_BOOST_SW);
-            __disable_interrupt();
-            while (1) { // wait for power to be cut
-                __bis_SR_register(LPM4_bits);
-            }
-#else
-            while(1); // discharge
-#endif
-#if 0
-        }
-#else
-        // Could be a loop, but let's just go ahead to avoid the scenario of
-        // getting stuck in this loop, if supervisor comparator goes low after
-        // the interrupt, but before we reach this condition. By going ahead
-        // without re-checking the condition, we're simply being optimistic.
-        if (!(P2IN & BIT2)) {
-            P3OUT |= BIT1;
-            P2IES &= ~BIT2;
-            P2IFG &= ~BIT2;
-            P2IE |= BIT2;
-            __bis_SR_register(LPM4_bits);
-            P3OUT &= ~BIT1;
-        }
-#endif
-    }
-#endif
-
-#if 0
-    while (1) {
-        LOG("getting app output\r\n");
-        get_app_output();
-        LOG("got app output\r\n");
-
-        __delay_cycles(0xffff);
-    }
-#endif
-
 #ifdef CONFIG_SEED_RNG_FROM_VCAP
     // Seed the random number generator
     uint16_t seed = ADC_read(ADC_CHAN_INDEX_VCAP);
@@ -282,147 +181,67 @@ int main(void)
     LOG("seed: %u\r\n", seed);
 #endif // CONFIG_SEED_RNG_FROM_VCAP
 
-    payload_init();
-
-#if 1
-    if (transmit_saved_payload()) {
-        LOG("saved pkt transmitted: shutting down\r\n");
-        capybara_shutdown(); // we're out of energy after any transmission
-    } else {
-        LOG("no saved payload found in flash\r\n");
-        // move on, collect some data
-    }
-
-    LOG("collect profile: turn on app supply\r\n");
-
-    GPIO(PORT_APP_SW, OUT) |= BIT(PIN_APP_SW);
-    GPIO(PORT_APP_SW, DIR) |= BIT(PIN_APP_SW);
-
-    LOG("check space in flash\r\n");
-    flash_loc_t loc;
-    if (!flash_find_space(PROFILE_SIZE, &loc)) {
-        LOG("out of space in flash\r\n");
-        flash_erase();
-        capybara_shutdown();
-    }
-
-    LOG("start profiling\r\n");
-    collect_profile();
-
-    LOG("profiling stopped: turn off app supply\r\n");
-    GPIO(PORT_APP_SW, OUT) &= ~BIT(PIN_APP_SW);
-
-    flash_status_t rc = save_payload(&loc, PKT_TYPE_ENERGY_PROFILE, (uint8_t *)&profile, PROFILE_SIZE);
-    switch (rc) {
-        case FLASH_STATUS_ALLOC_FAILED:
-            LOG("pkt not saved: flash alloc failed: erasing and rebooting\r\n");
-            flash_erase(); // can't trust the state of the free bitmask in flash
-            capybara_shutdown();
-            break;
-        case FLASH_STATUS_WRITE_FAILED:
-            LOG("pkt not saved: flash write failed: rebooting\r\n");
-            capybara_shutdown();  // free bitmask not affected, so no need to panic-erase
-            break;
-        default:
-            LOG("saved pkt and desc to flash, shutting down\r\b");
-            break;
-    }
-
-    capybara_shutdown();
-    // should not get here
-#endif
-
     LOG("init done\r\n");
 
-    // Randomly choose which action to perform (EDB does not keep state across reboots)
-    // NOTE: this is outside the loop, because within the loop we manually chain the tasks.
-#if 0
+    // Randomly choose which action to perform
     task_t task = rand() % NUM_TASKS;
-#else
-    task_t task = TASK_BEACON;
-#endif
     LOG("task: %u\r\n", task);
 
     switch (task) {
-#ifdef CONFIG_COLLECT_ENERGY_PROFILE
-        case TASK_ENERGY_PROFILE:
-            task_flags |= FLAG_COLLECT_WATCHPOINTS;
-            break;
-#endif // CONFIG_COLLECT_ENERGY_PROFILE
-#ifdef CONFIG_COLLECT_APP_OUTPUT
-        case TASK_APP_OUTPUT:
-            task_flags |= FLAG_APP_OUTPUT;
-            break;
-#endif // CONFIG_COLLECT_APP_OUTPUT
         case TASK_BEACON:
-        default:
-            task_flags |= FLAG_SEND_BEACON;
+            payload_send_beacon();
+            break;
+
+        case TASK_ENERGY_PROFILE:
+
+            if (transmit_saved_payload()) {
+                LOG("saved pkt transmitted: shutting down\r\n");
+                capybara_shutdown(); // we're out of energy after any transmission
+            } else {
+                LOG("no saved payload found in flash\r\n");
+                // move on, collect some data
+            }
+
+            LOG("collect profile: turn on app supply\r\n");
+
+            GPIO(PORT_APP_SW, OUT) |= BIT(PIN_APP_SW);
+            GPIO(PORT_APP_SW, DIR) |= BIT(PIN_APP_SW);
+
+            LOG("check space in flash\r\n");
+            flash_loc_t loc;
+            if (!flash_find_space(PROFILE_SIZE, &loc)) {
+                LOG("out of space in flash\r\n");
+                flash_erase();
+                capybara_shutdown();
+            }
+
+            LOG("start profiling\r\n");
+            collect_profile();
+
+            LOG("profiling stopped: turn off app supply\r\n");
+            GPIO(PORT_APP_SW, OUT) &= ~BIT(PIN_APP_SW);
+
+            flash_status_t rc = save_payload(&loc, PKT_TYPE_ENERGY_PROFILE, (uint8_t *)&profile, PROFILE_SIZE);
+            switch (rc) {
+                case FLASH_STATUS_ALLOC_FAILED:
+                    LOG("pkt not saved: flash alloc failed: erasing and rebooting\r\n");
+                    flash_erase(); // can't trust the state of the free bitmask in flash
+                    capybara_shutdown();
+                    break;
+                case FLASH_STATUS_WRITE_FAILED:
+                    LOG("pkt not saved: flash write failed: rebooting\r\n");
+                    capybara_shutdown();  // free bitmask not affected, so no need to panic-erase
+                    break;
+                default:
+                    LOG("saved pkt and desc to flash, shutting down\r\b");
+                    break;
+            }
             break;
     }
 
-    LOG("main loop\r\n");
-
-    while(1) {
-
-#ifdef CONFIG_WATCHDOG
-        msp_watchdog_kick();
-#endif // !CONFIG_WATCHDOG
-
-        if (task_flags & FLAG_SEND_BEACON) {
-            LOG("sb\r\n");
-            payload_send_beacon();
-            task_flags &= ~FLAG_SEND_BEACON;
-
-            // next action
-            task_flags |= FLAG_COLLECT_WATCHPOINTS;
-            //task_flags |= FLAG_APP_OUTPUT;
-            //task_flags |= FLAG_SEND_BEACON;
-            continue;
-        }
-
-        if (task_flags & FLAG_COLLECT_WATCHPOINTS) {
-            LOG("cw\r\n");
-            schedule_action(on_watchpoint_collection_complete, CONFIG_WATCHPOINT_COLLECTION_TIME);
-            enable_watchpoints();
-            task_flags &= ~FLAG_COLLECT_WATCHPOINTS;
-        }
-
-#ifdef CONFIG_COLLECT_APP_OUTPUT
-        if (task_flags & FLAG_APP_OUTPUT) {
-            LOG("ao\r\n");
-            get_app_output();
-            payload_send_app_output();
-            task_flags &= ~FLAG_APP_OUTPUT;
-
-            // next action
-            //task_flags |= FLAG_COLLECT_WATCHPOINTS;
-            task_flags |= FLAG_SEND_BEACON;
-            continue;
-        }
-#endif // CONFIG_COLLECT_APP_OUTPUT
-
-#ifdef CONFIG_COLLECT_ENERGY_PROFILE
-        if (task_flags & FLAG_ENERGY_PROFILE_READY) {
-            LOG("sw\r\n");
-            payload_send_profile();
-            task_flags &= ~FLAG_ENERGY_PROFILE_READY;
-
-            // next action
-            task_flags |= FLAG_APP_OUTPUT;
-            //task_flags |= FLAG_SEND_BEACON;
-            continue;
-        }
-#endif // CONFIG_COLLECT_ENERGY_PROFILE
-
-        edb_service();
-
-#ifdef CONFIG_SLEEP_IN_MAIN_LOOP
-        LOG("sleep\r\n");
-        // sleep, wait for event flag to be set, then handle it in loop
-        __bis_SR_register(CONFIG_MAIN_LOOP_SLEEP_STATE + GIE);
-        LOG("woke up\r\n");
-#endif // CONFIG_SLEEP_IN_MAIN_LOOP
-    }
+    // One-shot design
+    LOG("task completed: shutting down\r\n");
+    capybara_shutdown();
 }
 
 void __attribute__ ((interrupt(PORT2_VECTOR))) P2_ISR (void)

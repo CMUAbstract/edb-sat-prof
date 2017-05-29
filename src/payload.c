@@ -57,18 +57,6 @@ static void log_packet(char type, uint8_t header, uint8_t *pkt, unsigned len)
 #endif
 }
 
-void payload_init()
-{
-#ifdef CONFIG_COLLECT_APP_OUTPUT
-    memset(&payload.app_output, 0, sizeof(payload.app_output));
-#endif
-
-// TODO: move to main, because this is too major
-#ifdef CONFIG_RADIO_TRANSMIT_PAYLOAD
-    SpriteRadio_SpriteRadio();
-#endif
-}
-
 void payload_send_beacon()
 {
     uint8_t pkt = 0xED;

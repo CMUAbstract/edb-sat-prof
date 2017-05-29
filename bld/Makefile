@@ -6,6 +6,7 @@ OBJECTS = \
 	profile.o \
 	flash.o \
 	bits.o \
+	power.o \
 
 DEPS += \
 	libmsp \
