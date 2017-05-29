@@ -4,8 +4,8 @@
 
 #include "power.h"
 
-// Read VDD_AP through a divider
-uint16_t sense_vdd_ap()
+// Read VBANK through a divider
+uint16_t sense_vbank()
 {
     // Set pin to ADC mode
     P2MAP4 = 31;
@@ -28,13 +28,9 @@ uint16_t sense_vdd_ap()
 
     ADC12CTL0 |= ADC12ENC + ADC12SC;
 
-    // TODO: replace with sleep with interrupt wakeup
-    for (int i = 0; i < 0xff; ++i) {
-        __delay_cycles(0xffff);
-    }
+    // TODO: sleep and wakeup on interrupt
+    while (ADC12CTL1 & ADC12BUSY); // wait for conversion to complete
 
-    uint16_t vdd_ap = ADC12MEM0;
-    LOG("V=%u B=%u I=%x\r\n", vdd_ap, (ADC12CTL1 & ADC12BUSY), ADC12IFG);
-
-    return vdd_ap;
+    uint16_t vbank = ADC12MEM0;
+    return vbank;
 }

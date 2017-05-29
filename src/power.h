@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-uint16_t sense_vdd_ap();
+uint16_t sense_vbank();
 
 #endif // POWER_H
-
