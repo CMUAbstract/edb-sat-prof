@@ -23,8 +23,6 @@
 #include "payload.h"
 #include "flash.h"
 
-#define CONFIG_MAIN_LOOP_SLEEP_STATE LPM0_bits
-
 #define CONFIG_WDT_BITS WATCHDOG_BITS(WATCHDOG_CLOCK, WATCHDOG_INTERVAL)
 
 typedef enum {
@@ -108,6 +106,7 @@ int main(void)
     msp_clock_setup(); // set up unified clock system
     INIT_CONSOLE();
     __enable_interrupt();
+
     LOG("EDBsat v1.2 - EDB MCU\r\n");
 
 #ifdef CONFIG_SEED_RNG_FROM_VCAP
