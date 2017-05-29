@@ -29,7 +29,7 @@ static bool arm_vcap_comparator()
     COMP_VBANK(CTL1) |= COMP_VBANK(PWRMD_2) | COMP_VBANK(ON);
 
     // Let the comparator output settle before checking or setting up interrupt
-    msp_sleep(VBANK_COMP_SETTLE);
+    msp_sleep(PERIOD_VBANK_COMP_SETTLE);
 
     if (COMP_VBANK(CTL1) & COMP_VBANK(OUT)) {
         // Vcap already below threshold
