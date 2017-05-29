@@ -22,6 +22,7 @@
 
 #include "payload.h"
 #include "flash.h"
+#include "random.h"
 
 #define CONFIG_WDT_BITS WATCHDOG_BITS(WATCHDOG_CLOCK, WATCHDOG_INTERVAL)
 
@@ -110,10 +111,7 @@ int main(void)
     LOG("EDBsat v1.2 - EDB MCU\r\n");
 
 #ifdef CONFIG_SEED_RNG_FROM_VCAP
-    // Seed the random number generator
-    uint16_t seed = ADC_read(ADC_CHAN_INDEX_VCAP);
-    srand(seed);
-    LOG("seed: %u\r\n", seed);
+    seed_random_from_adc();
 #endif // CONFIG_SEED_RNG_FROM_VCAP
 
     // Randomly choose which action to perform

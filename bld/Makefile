@@ -7,6 +7,7 @@ OBJECTS = \
 	flash.o \
 	bits.o \
 	power.o \
+	random.o \
 
 DEPS += \
 	libmsp \
