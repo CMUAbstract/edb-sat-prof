@@ -427,16 +427,11 @@ int main(void)
 
 void __attribute__ ((interrupt(PORT2_VECTOR))) P2_ISR (void)
 {
-#if 0
-    P2IFG &= ~(BIT2);
-    P2IE &= ~(BIT2);
-#else
     unsigned flags = P2IFG;
     if (flags & BIT1)
         P2IFG &= ~BIT1;
     if (flags & BIT2)
         P2IFG &= ~BIT2;
-#endif
 
     // We were sleeping waiting for interrupt, so exit sleep
     __bic_SR_register_on_exit(LPM4_bits);
