@@ -11,9 +11,10 @@ DEPS += \
 	libmsp \
 	libedbserver \
 	libcapybara \
+	libsprite \
 
 # Configuration local to this app executable
-export CONFIG_RADIO_TRANSMIT_PAYLOAD = 0
+export CONFIG_RADIO_TRANSMIT_PAYLOAD = 1
 export CONFIG_ENABLE_PAYLOAD = 1
 export CONFIG_PERIODIC_PAYLOAD = 1
 export CONFIG_COLLECT_ENERGY_PROFILE = 1
@@ -54,7 +55,6 @@ export CONFIG_ENABLE_DEBUG_MODE = 1
 export CONFIG_PULL_DOWN_ON_COMM_LINES = 1
 
 export CONFIG_AUTO_ENABLED_WATCHPOINTS = 4
-export CONFIG_RADIO_TRANSMIT_PAYLOAD = 0
 export CONFIG_TARGET_POWER_SWITCH = 0
 export CONFIG_SLEEP_IN_MAIN_LOOP = 1
 export CONFIG_WATCHDOG = 1

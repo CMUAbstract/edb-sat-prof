@@ -76,6 +76,7 @@ void payload_send_beacon()
     log_packet('B', 0, &pkt, sizeof(pkt));
 
 #ifdef CONFIG_RADIO_TRANSMIT_PAYLOAD
+    SpriteRadio_SpriteRadio(); // only one tx per boot, so init here
     SpriteRadio_txInit();
     SpriteRadio_transmit((char *)&pkt, sizeof(pkt));
     SpriteRadio_sleep();
@@ -97,6 +98,7 @@ void payload_send_app_output()
     log_packet('A', header, pkt, pkt_len);
 
 #ifdef CONFIG_RADIO_TRANSMIT_PAYLOAD
+    SpriteRadio_SpriteRadio();
     SpriteRadio_txInit();
     SpriteRadio_transmit((char *)&header, sizeof(header));
     SpriteRadio_transmit((char *)pkt, pkt_len);
@@ -171,11 +173,12 @@ bool send_pkt(rad_pkt_union_t *pkt)
     LOG("rad pkt chksum: %02x\r\n", pkt->typed.chksum);
     LOG("trasmiting pkt: 0x%04x\r\n", pkt->raw);
 
-#if 0 // TODO
+#ifdef CONFIG_RADIO_TRANSMIT_PAYLOAD
+    SpriteRadio_SpriteRadio(); // only one tx per boot, so init here
     SpriteRadio_txInit();
     SpriteRadio_transmit((uint8_t *)pkt, sizeof(rad_pkt_t));
     SpriteRadio_sleep();
-#endif
+#endif // CONFIG_RADIO_TRANSMIT_PAYLOAD
 
     LOG("trasmit finished\r\n");
     return true;
