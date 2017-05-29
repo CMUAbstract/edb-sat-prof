@@ -7,10 +7,7 @@
 #include <libmsp/clock.h>
 #include <libmsp/watchdog.h>
 #include <libcapybara/capybara.h>
-
-#ifdef CONFIG_DEV_CONSOLE
 #include <libio/log.h>
-#endif // CONFIG_DEV_CONSOLE
 
 #include <libedbserver/edb.h>
 #include <libedbserver/pin_assign.h>
@@ -111,13 +108,8 @@ int main(void)
     capybara_wait_for_supply();
 
     msp_clock_setup(); // set up unified clock system
-
-#ifdef CONFIG_DEV_CONSOLE
     INIT_CONSOLE();
-#endif // CONFIG_DEV_CONSOLE
-
     __enable_interrupt();
-
     LOG("EDBsat v1.2 - EDB MCU\r\n");
 
 

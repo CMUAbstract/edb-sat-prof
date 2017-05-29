@@ -3,10 +3,7 @@
 #include <stdlib.h>
 
 #include <libmsp/periph.h>
-
-#ifdef CONFIG_DEV_CONSOLE
 #include <libio/log.h>
-#endif
 
 #ifdef CONFIG_RADIO_TRANSMIT_PAYLOAD
 #include <libsprite/SpriteRadio.h>
@@ -41,7 +38,6 @@ static uint8_t * const host_msg_payload = &host_msg_buf[UART_MSG_HEADER_SIZE];
 
 static void log_packet(char type, uint8_t header, uint8_t *pkt, unsigned len)
 {
-#if defined(CONFIG_DEV_CONSOLE)
     int i;
     BLOCK_LOG_BEGIN();
     BLOCK_LOG("tx: pkt %c:\r\n", type);
@@ -54,7 +50,6 @@ static void log_packet(char type, uint8_t header, uint8_t *pkt, unsigned len)
     }
     BLOCK_LOG("\r\n");
     BLOCK_LOG_END();
-#endif
 }
 
 void payload_send_beacon()

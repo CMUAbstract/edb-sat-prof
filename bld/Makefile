@@ -67,8 +67,6 @@ export CONFIG_CHARGE_CMDS = 0
 export CONFIG_STATE_PINS = 0
 export CONFIG_EVENT_PINS = 1
 
-export CONFIG_DEV_CONSOLE = 1
-
 export LIBMSP_CLOCK_SOURCE = DCO
 export LIBMSP_DCO_REF_SOURCE = REFO
 export LIBMSP_DCO_REF_CLOCK_DIV = 1
@@ -111,7 +109,6 @@ include $(LIB_ROOT)/libedbserver/bld/Makefile.config
 # Need headers only, hence not a usual dep
 override CFLAGS += -I$(LIB_ROOT)/libedb/src/include
 
-ifeq ($(CONFIG_DEV_CONSOLE),1)
+# Unset this variable to disable console
 export CONFIG_PRINTF_LIB = libmspsoftuart
 include $(MAKER_ROOT)/Makefile.console
-endif # CONFIG_DEV_CONSOLE
