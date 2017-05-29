@@ -16,6 +16,7 @@ profile_t profile;
 
 volatile bool profiling_vcap_ok = false;
 volatile bool profiling_overflow = false;
+volatile bool profiling_timeout = false;
 
 static bool arm_vcap_comparator()
 {
@@ -50,16 +51,24 @@ static void toggle_watchpoints(bool enable)
     enable_watchpoints(); // actually enable the pins
 }
 
+static msp_alarm_action_t on_profiling_timeout()
+{
+    profiling_timeout = true;
+    return MSP_ALARM_ACTION_WAKEUP;
+}
+
 void collect_profile()
 {
     memset(&profile, 0, sizeof(profile_t));
 
     profiling_vcap_ok = arm_vcap_comparator();
+    profiling_timeout = false;
+    msp_alarm(PERIOD_PROFILING_TIMEOUT, on_profiling_timeout);
 
     edb_set_watchpoint_callback(profile_event);
     toggle_watchpoints(true);
 
-    while (profiling_vcap_ok && !profiling_overflow) {
+    while (profiling_vcap_ok && !profiling_overflow && !profiling_timeout) {
         // will wake up on watchpoint
         __bis_SR_register(LPM0_bits);
     }
@@ -68,6 +77,9 @@ void collect_profile()
     __enable_interrupt(); // re-enable, in case of overflow
 
     __delay_cycles(256); // avoid corruption in softuart output on wakeup
+    LOG("profiling stopped; vcap %u ovrflw %u timeout %u\r\n",
+        profiling_vcap_ok, profiling_overflow, profiling_timeout);
+
     LOG("profile: %u %u %u %u\r\n",
         profile.events[0].count,
         profile.events[1].count,

@@ -42,6 +42,9 @@ export VDD_EDB = 2.4 # V
 # Stop profiling when supercap voltage drops below this threshold
 export PROFILING_VBANK_MIN = 2.0 # V
 
+# Stop profiling after this interval elapses
+export PROFILING_TIMEOUT_MS = 16000
+
 # Configuration for libedbserver
 export CONFIG_ENABLE_WATCHPOINTS = 1
 export CONFIG_ENABLE_WATCHPOINT_CALLBACK = 1
