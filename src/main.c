@@ -125,7 +125,7 @@ int main(void)
         case TASK_BEACON:
             payload_send_beacon();
             break;
-
+#ifdef CONFIG_COLLECT_ENERGY_PROFILE
         case TASK_ENERGY_PROFILE:
 
             if (transmit_saved_payload()) {
@@ -171,6 +171,7 @@ int main(void)
                     break;
             }
             break;
+#endif // CONFIG_COLLECT_ENERGY_PROFILE
 
         default:
             LOG("unknown task: %u\r\n", task); // should not happen
