@@ -112,24 +112,12 @@ int main(void)
     __enable_interrupt();
     LOG("EDBsat v1.2 - EDB MCU\r\n");
 
-
-#if 1
-    // TODO: merge into edb_server_init?
-    LOG("EDB pin setup\r\n");
-    edb_pin_setup();
-    LOG("EDB server init\r\n");
-    edb_server_init();
-    LOG("EDB server done\r\n");
-#endif
-
 #ifdef CONFIG_SEED_RNG_FROM_VCAP
     // Seed the random number generator
     uint16_t seed = ADC_read(ADC_CHAN_INDEX_VCAP);
     srand(seed);
     LOG("seed: %u\r\n", seed);
 #endif // CONFIG_SEED_RNG_FROM_VCAP
-
-    LOG("init done\r\n");
 
     // Randomly choose which action to perform
     task_t task = rand() % NUM_TASKS;

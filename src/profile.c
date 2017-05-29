@@ -65,6 +65,10 @@ void collect_profile()
     profiling_timeout = false;
     msp_alarm(PERIOD_PROFILING_TIMEOUT, on_profiling_timeout);
 
+    LOG("EDB server init\r\n");
+    edb_server_init();
+    LOG("EDB server done\r\n");
+
     edb_set_watchpoint_callback(profile_event);
     toggle_watchpoints(true);
 
