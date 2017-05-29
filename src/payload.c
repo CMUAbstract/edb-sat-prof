@@ -159,7 +159,7 @@ bool send_pkt(rad_pkt_union_t *pkt)
 #ifdef CONFIG_RADIO_TRANSMIT_PAYLOAD
     SpriteRadio_SpriteRadio(); // only one tx per boot, so init here
     SpriteRadio_txInit();
-    SpriteRadio_transmit((uint8_t *)pkt, sizeof(rad_pkt_t));
+    SpriteRadio_transmit((char *)pkt, sizeof(rad_pkt_t));
     SpriteRadio_sleep();
 #endif // CONFIG_RADIO_TRANSMIT_PAYLOAD
 
