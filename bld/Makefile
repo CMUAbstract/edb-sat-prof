@@ -18,7 +18,6 @@ DEPS += \
 # Configuration local to this app executable
 export CONFIG_RADIO_TRANSMIT_PAYLOAD = 1
 export CONFIG_ENABLE_PAYLOAD = 1
-export CONFIG_PERIODIC_PAYLOAD = 1
 export CONFIG_COLLECT_ENERGY_PROFILE = 1
 export CONFIG_COLLECT_APP_OUTPUT = 0
 export CONFIG_SEED_RNG_FROM_VCAP = 1
