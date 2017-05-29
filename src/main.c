@@ -324,7 +324,7 @@ int main(void)
             capybara_shutdown();  // free bitmask not affected, so no need to panic-erase
             break;
         default:
-            LOG("saved pkt and desc to flash\r\n");
+            LOG("saved pkt and desc to flash, shutting down\r\b");
             break;
     }
 
