@@ -36,30 +36,13 @@ typedef enum {
 #ifdef CONFIG_COLLECT_APP_OUTPUT
     TASK_APP_OUTPUT,
 #endif // CONFIG_COLLECT_APP_OUTPUT
-    NUM_TASKS,
+    NUM_TASKS
 } task_t;
-
-
-typedef enum {
-    FLAG_ENERGY_PROFILE_READY   = 0x0001, //!< send payload packet to ground
-    FLAG_COLLECT_WATCHPOINTS    = 0x0002, //!< start collecting energy profile
-    FLAG_APP_OUTPUT             = 0x0004, //!< interrupt target and get app data packet
-    FLAG_SEND_BEACON            = 0x0008, //!< transmit a beacon to ground
-} task_flag_t;
-
-static uint16_t task_flags = 0;
 
 #ifdef CONFIG_COLLECT_APP_OUTPUT // TODO: a timeout should be applied to all target comms
 /* Whether timed out while communicating with target over UART */
 static bool target_comm_timeout;
 #endif // CONFIG_COLLECT_APP_OUTPUT
-
-static sched_cmd_t on_watchpoint_collection_complete()
-{
-    disable_watchpoints();
-    task_flags |= FLAG_ENERGY_PROFILE_READY;
-    return SCHED_CMD_WAKEUP;
-}
 
 #ifdef CONFIG_COLLECT_APP_OUTPUT
 static sched_cmd_t on_target_comm_timeout()
@@ -210,6 +193,9 @@ int main(void)
                     break;
             }
             break;
+
+        default:
+            LOG("unknown task: %u\r\n", task); // should not happen
     }
 
     // One-shot design
