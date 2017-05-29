@@ -332,10 +332,6 @@ int main(void)
     // should not get here
 #endif
 
-#ifdef CONFIG_BOOT_LED
-    GPIO(PORT_LED_BOOT, OUT) &= ~BIT(PIN_LED_BOOT);
-#endif // CONFIG_BOOT_LED
-
     LOG("init done\r\n");
 
     // Randomly choose which action to perform (EDB does not keep state across reboots)
@@ -365,10 +361,6 @@ int main(void)
     }
 
     LOG("main loop\r\n");
-
-#ifdef CONFIG_MAIN_LOOP_LED
-    unsigned main_loop_count = 0;
-#endif // CONFIG_MAIN_LOOP_LED
 
     while(1) {
 
@@ -423,16 +415,6 @@ int main(void)
 #endif // CONFIG_COLLECT_ENERGY_PROFILE
 
         edb_service();
-
-#ifdef CONFIG_MAIN_LOOP_LED
-        // This LED toggle is unnecessary, and probably a huge waste of processing time.
-        // The LED blinking will slow down when the monitor is performing more tasks.
-        if (state == STATE_IDLE) {
-            if (main_loop_count++ == ~0) {
-                GPIO(PORT_LED_MAIN_LOOP, OUT) ^= BIT(PIN_LED_MAIN_LOOP);
-            }
-        }
-#endif // CONFIG_MAIN_LOOP_LED
 
 #ifdef CONFIG_SLEEP_IN_MAIN_LOOP
         LOG("sleep\r\n");
