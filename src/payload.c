@@ -131,23 +131,6 @@ void payload_record_app_output(const uint8_t *data, unsigned len)
 }
 #endif // CONFIG_COLLECT_APP_OUTPUT
 
-#ifdef CONFIG_SEND_PAYLOAD_TO_HOST
-void send_payload(payload_t *payload)
-{
-    // The '*payload*' variables here refer to the payload of the message that
-    // is being sent to host.  The argument 'payload' is just happens to be
-    // also called payload.
-
-    unsigned payload_len = 0;
-    UART_begin_transmission();
-
-    memcpy(host_msg_payload, payload, sizeof(payload_t));
-    payload_len += sizeof(payload_t);
-
-    send_msg_to_host(USB_RSP_ENERGY_PROFILE, payload_len);
-}
-#endif // CONFIG_SEND_PAYLOAD_TO_HOST
-
 bool send_pkt(rad_pkt_union_t *pkt)
 {
     CRCINIRES = 0xFFFF; // init value for checksum
