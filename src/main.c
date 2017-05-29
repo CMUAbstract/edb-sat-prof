@@ -338,15 +338,6 @@ int main(void)
 
     LOG("init done\r\n");
 
-#if CONFIG_TARGET_POWER_SWITCH
-    // Setup target's "power switch" pin
-    GPIO(PORT_TARGET_PWR_SWITCH, OUT) &= ~BIT(PIN_TARGET_PWR_SWITCH);
-    GPIO(PORT_TARGET_PWR_SWITCH, DIR) |= BIT(PIN_TARGET_PWR_SWITCH);
-
-    // turn on target's "power switch"
-    GPIO(PORT_TARGET_PWR_SWITCH, OUT) |= BIT(PIN_TARGET_PWR_SWITCH);
-#endif // CONFIG_TARGET_POWER_SWITCH
-
     // Randomly choose which action to perform (EDB does not keep state across reboots)
     // NOTE: this is outside the loop, because within the loop we manually chain the tasks.
 #if 0
