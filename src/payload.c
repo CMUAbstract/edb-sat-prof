@@ -166,12 +166,14 @@ flash_status_t save_payload(flash_loc_t *loc, pkt_type_t pkt_type, uint8_t *pkt_
     for (int i = 0; i < len; ++i)
          CRCDI = *(pkt_data + i);
     pkt_desc.typed.header.typed.pay_chksum = CRCINIRES & 0x0f;
-    LOG("payload chksum: %02x\r\n", pkt_desc.typed.header.typed.pay_chksum);
 
     CRCINIRES = 0xFFFF; // init value for checksum
     CRCDI = pkt_desc.typed.header.raw;
     pkt_desc.typed.header.typed.hdr_chksum = CRCINIRES & 0x0f;
-    LOG("hdr chksum: %02x\r\n", pkt_desc.typed.header.typed.hdr_chksum);
+
+    LOG("chksum: hdr %02x payload %02x\r\n",
+        pkt_desc.typed.header.typed.hdr_chksum,
+        pkt_desc.typed.header.typed.pay_chksum);
 
     LOG("saving pkt to flash: \r\n");
     for (int i = 0; i < len; ++i) {
