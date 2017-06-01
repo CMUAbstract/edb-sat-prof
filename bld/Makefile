@@ -34,7 +34,10 @@ export COMP_CHAN_VBANK = B.4 # comparator channel for Vbank voltage
 export VBANK_DIV = 100:750 # adjusted for Rin of comparator
 export VBANK_COMP_SETTLE_MS = 2 # time (ms) before reading comparator
 
+export MAIN_CLOCK_FREQ = 8192000
+
 export CLOCK_FREQ_ACLK = 32768 # Hz
+export CLOCK_FREQ_SMCLK = $(MAIN_CLOCK_FREQ)
 
 # Setpoint of voltage supply to EDB MCU (set by resistor divider in hardware)
 export VDD_EDB = 2.4 # V
@@ -63,7 +66,7 @@ export CONFIG_EVENT_PINS = 1
 export LIBMSP_CLOCK_SOURCE = DCO
 export LIBMSP_DCO_REF_SOURCE = REFO
 export LIBMSP_DCO_REF_CLOCK_DIV = 1
-export LIBMSP_DCO_FREQ = 8192000ull
+export LIBMSP_DCO_FREQ = $(MAIN_CLOCK_FREQ)
 export LIBMSP_CORE_VOLTAGE_LEVEL = 2
 
 export LIBMSP_SLEEP_TIMER = A.1.0
