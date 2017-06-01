@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define NUM_EVENTS                      4
+#define NUM_EVENTS                      5
 #define NUM_ENERGY_QUANTA               4
 #define NUM_ENERGY_BITS_PER_QUANTUM     4
 #define ENERGY_QUANTUM_MASK             0x0F
