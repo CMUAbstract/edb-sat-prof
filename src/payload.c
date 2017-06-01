@@ -196,43 +196,78 @@ flash_status_t save_payload(flash_loc_t *loc, pkt_type_t pkt_type, uint8_t *pkt_
     return FLASH_STATUS_OK;
 }
 
-bool transmit_saved_payload()
+static bool is_pkt_header_valid(pkt_header_union_t *hdr)
 {
-    LOG("look for unsent pkt in flash\r\n");
-    uint8_t *saved_pkt_desc_addr = flash_find_last_byte();
-    LOG("pkt descriptor @0x%04x\r\n", (uint16_t)saved_pkt_desc_addr);
-    if (!saved_pkt_desc_addr) {
-        LOG("no saved pkt found in flash\r\n");
-        return false;
-    }
-    saved_pkt_desc_addr -= PAYLOAD_DESC_SIZE - 1; // move to first byte of the pkt descriptor
-
-    pkt_desc_union_t saved_pkt_desc_union;
-    saved_pkt_desc_union.raw = AS_PKT_DESC(saved_pkt_desc_addr); // read from flash
-    pkt_desc_t saved_pkt_desc = saved_pkt_desc_union.typed;
-    pkt_header_t saved_pkt_header = saved_pkt_desc.header.typed;
-
-    LOG("pkt descriptor: %04x %04x: type %u size %u pad %u | chksum: payload %x hdr %x\r\n",
-        (uint16_t)(saved_pkt_desc_union.raw >> 16), (uint16_t)(saved_pkt_desc_union.raw & 0xFFFF),
-        saved_pkt_header.type, saved_pkt_header.size, saved_pkt_header.padded,
-        saved_pkt_header.pay_chksum, saved_pkt_header.hdr_chksum);
-
     CRCINIRES = 0xFFFF; // init value for checksum
-    CRCDI = PKT_HDR_DATA(saved_pkt_desc.header.raw);
+    CRCDI = PKT_HDR_DATA(hdr->raw);
     unsigned hdr_chksum = CRCINIRES & 0x0f;
-    if (hdr_chksum != saved_pkt_header.hdr_chksum) {
+    if (hdr_chksum != hdr->typed.hdr_chksum) {
         LOG("pkt header checksum mismatch (%02x != %02x): igoring pkt\r\n",
-            hdr_chksum, saved_pkt_header.hdr_chksum);
+            hdr_chksum, hdr->typed.hdr_chksum);
         return false;
     }
     LOG("pkt header valid\r\n");
+    return true;
+}
 
-    if (!saved_pkt_desc.sent_mask) {
-        LOG("pkt already marked sent\r\n");
+bool transmit_saved_payload()
+{
+    // Start at last pkt written, and walk backwards (to the left)
+    LOG("look for unsent pkt in flash\r\n");
+    uint8_t *prev_saved_pkt_desc_addr = flash_find_last_byte();
+    LOG("last byte @0x%04x\r\n", (uint16_t)prev_saved_pkt_desc_addr);
+    if (!prev_saved_pkt_desc_addr) {
+        LOG("no saved pkt found in flash\r\n");
         return false;
     }
+    prev_saved_pkt_desc_addr -= PAYLOAD_DESC_SIZE - 1; // move to first byte of the pkt descriptor
+    LOG("pkt desc @0x%04x\r\n", (uint16_t)prev_saved_pkt_desc_addr);
 
-    uint8_t *saved_pkt_addr = ((uint8_t*)saved_pkt_desc_addr) - saved_pkt_header.size - saved_pkt_header.padded;
+    uint8_t *saved_pkt_desc_addr = NULL;
+    uint8_t *saved_pkt_addr = NULL;
+    pkt_desc_t saved_pkt_desc;
+    pkt_header_t saved_pkt_header;
+
+    do {
+
+        // consider the prev pkt
+
+        pkt_desc_union_t prev_saved_pkt_desc_union;
+        prev_saved_pkt_desc_union.raw = AS_PKT_DESC(prev_saved_pkt_desc_addr); // read from flash
+        pkt_desc_t prev_saved_pkt_desc = prev_saved_pkt_desc_union.typed;
+        pkt_header_t prev_saved_pkt_header = prev_saved_pkt_desc.header.typed;
+
+        LOG("consider pkt desc: %04x %04x: type %u size %u pad %u | chksum: payload %x hdr %x\r\n",
+            (uint16_t)(prev_saved_pkt_desc_union.raw >> 16), (uint16_t)(prev_saved_pkt_desc_union.raw & 0xFFFF),
+            prev_saved_pkt_header.type, prev_saved_pkt_header.size, prev_saved_pkt_header.padded,
+            prev_saved_pkt_header.pay_chksum, prev_saved_pkt_header.hdr_chksum);
+
+        if (!is_pkt_header_valid(&prev_saved_pkt_desc.header)) {
+            LOG("reached invalid pkt header\r\n");
+            break;
+        }
+
+        if (!prev_saved_pkt_desc.sent_mask) {
+            LOG("reached sent pkt\r\n");
+            break;
+        }
+
+        // pkt header is valid and pkt is not sent, set curser on it and keep walking
+        LOG("pkt descriptor valid: addr 0x%04x desc\r\n", (uint16_t)prev_saved_pkt_desc_addr);
+        saved_pkt_desc_addr = prev_saved_pkt_desc_addr;
+        saved_pkt_desc = prev_saved_pkt_desc;
+        saved_pkt_header = prev_saved_pkt_header;
+        saved_pkt_addr = ((uint8_t*)saved_pkt_desc_addr) - saved_pkt_header.size - saved_pkt_header.padded;
+
+        prev_saved_pkt_desc_addr = saved_pkt_addr - 1 - PAYLOAD_DESC_SIZE - 1;
+        LOG("prev pkt desc addr: 0x%04x\r\n", (uint16_t)prev_saved_pkt_desc_addr);
+
+    } while (flash_addr_in_range(prev_saved_pkt_desc_addr));
+
+    if (saved_pkt_desc_addr == NULL) {
+        LOG("no valid unsent pkt found in flash\r\n");
+        return false;
+    }
 
     LOG("pkt payload (addr 0x%04x len %u): ", (uint16_t)saved_pkt_addr, saved_pkt_header.size);
     for(int i = 0; i < saved_pkt_header.size; ++i) {
