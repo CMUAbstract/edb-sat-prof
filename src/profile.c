@@ -6,6 +6,8 @@
 #include <libedbserver/codepoint.h>
 #include <libedbserver/pin_assign.h>
 
+#include <libedbserver/uart.h>
+
 #include "profile.h"
 
 // Shorthand
@@ -17,9 +19,13 @@
 __attribute__((aligned(2)))
 profile_t profile;
 
-volatile bool profiling_vcap_ok = false;
-volatile bool profiling_overflow = false;
-volatile bool profiling_timeout = false;
+// Flag indicating when Vcap drops below threshold to end profiling
+static volatile bool profiling_vcap_ok = false;
+
+// A counter in the profile data has reached its max value
+static volatile bool profiling_overflow = false;
+
+static volatile bool profiling_timeout = false;
 
 static bool arm_vcap_comparator()
 {
@@ -60,8 +66,10 @@ static msp_alarm_action_t on_profiling_timeout()
     return MSP_ALARM_ACTION_WAKEUP;
 }
 
-void collect_profile()
+void start_profiling()
 {
+    LOG("start profiling\r\n");
+
     memset(&profile, 0, sizeof(profile_t));
 
     profiling_vcap_ok = arm_vcap_comparator();
@@ -75,16 +83,18 @@ void collect_profile()
     edb_set_watchpoint_callback(profile_event);
     toggle_watchpoints(true);
 
-    while (profiling_vcap_ok && !profiling_overflow && !profiling_timeout) {
-        // will wake up on watchpoint
-        __bis_SR_register(LPM0_bits);
-    }
+}
 
+bool continue_profiling()
+{
+    return profiling_vcap_ok && !profiling_overflow && !profiling_timeout;
+}
+
+void stop_profiling() {
     toggle_watchpoints(false);
-    __enable_interrupt(); // re-enable, in case of overflow
 
     __delay_cycles(256); // avoid corruption in softuart output on wakeup
-    LOG("profiling stopped; vcap %u ovrflw %u timeout %u\r\n",
+    LOG("profiling stopped: vcap %u ovrflw %u timeout %u\r\n",
         profiling_vcap_ok, profiling_overflow, profiling_timeout);
 
     LOG("profile: %u %u %u %u\r\n",
@@ -98,7 +108,11 @@ bool profile_event(unsigned index, uint16_t vcap)
 {
     profile.events[index].count++;
     if (profile.events[index].count == 0) { // overflow
-        __disable_interrupt(); // to avoid counting any other watchpoints (re-enable after loop)
+        // Disable watchpoints to avoid counting any other watchpoints, as soon as possible
+        __disable_interrupt();
+        toggle_watchpoints(false);
+        __enable_interrupt();
+
         profile.events[index].count -= 1; // revert increment
         profiling_overflow = true;
         return true; // wake up the MCU

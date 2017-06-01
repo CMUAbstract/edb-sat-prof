@@ -15,7 +15,9 @@ typedef enum {
     FLASH_STATUS_WRITE_FAILED = 2,
 } flash_status_t;
 
-bool flash_find_space(unsigned len, flash_loc_t *loc);
+bool flash_addr_in_range(uint8_t *addr);
+
+unsigned flash_find_space(unsigned len, flash_loc_t *loc);
 uint8_t *flash_alloc(flash_loc_t *loc, unsigned len);
 uint8_t *flash_find_last_byte();
 

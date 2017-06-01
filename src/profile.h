@@ -23,13 +23,9 @@ typedef struct {
 
 extern profile_t profile;
 
-// Flag indicating when Vcap drops below threshold to end profiling
-extern volatile bool profiling_vcap_ok;
-
-// A counter in the profile data has reached its max value
-extern volatile bool profiling_overflow;
-
-void collect_profile();
+void start_profiling();
+bool continue_profiling();
+void stop_profiling();
 
 // Process the event, and returns whether to wake up the MCU or not afterwards
 bool profile_event(unsigned index, uint16_t vcap);

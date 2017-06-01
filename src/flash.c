@@ -28,6 +28,11 @@ static void print_mask()
     LOG("\r\n");
 }
 
+bool flash_addr_in_range(uint8_t *addr)
+{
+    return FREE_MASK_ADDR <= addr && addr < FREE_MASK_ADDR + FLASH_STORAGE_SEGMENT_SIZE;
+}
+
 static unsigned find_first_set_word_in_mask()
 {
     uint16_t *addr = (uint16_t *)FREE_MASK_ADDR;
@@ -37,7 +42,8 @@ static unsigned find_first_set_word_in_mask()
     return idx;
 }
 
-bool flash_find_space(unsigned len, flash_loc_t *loc)
+// Returns the number of free bytes (including len)
+unsigned flash_find_space(unsigned len, flash_loc_t *loc)
 {
     LOG("FM: find space: len %u\r\n", len);
     print_mask();
@@ -45,7 +51,7 @@ bool flash_find_space(unsigned len, flash_loc_t *loc)
     loc->word_idx = find_first_set_word_in_mask();
     if (loc->word_idx == FREE_MASK_WORDS) {
         LOG("FM: no free words\r\n");
-        return false; // no more free bytes left
+        return 0; // no more free bytes left
     }
 
     loc->bit_idx = find_first_set_bit_in_word(*(((uint16_t *)FREE_MASK_ADDR) + loc->word_idx));
@@ -55,10 +61,10 @@ bool flash_find_space(unsigned len, flash_loc_t *loc)
     unsigned free_bits_in_word = 16 - loc->bit_idx;
     if (free_bits_in_word < len && loc->word_idx == FREE_MASK_WORDS - 1) {
         LOG("FM: insufficient free bits\r\n");
-        return false; // not enough free bytes left
+        return 0; // not enough free bytes left
     }
 
-    return true;
+    return ((FREE_MASK_WORDS - loc->word_idx) << 4) - loc->bit_idx; // free bytes
 }
 
 uint8_t *flash_find_last_byte()
@@ -78,6 +84,7 @@ uint8_t *flash_find_last_byte()
     return p;
 }
 
+// Sets bits in free mask and updates loc to point to the next free bit
 uint8_t *flash_alloc(flash_loc_t *loc, unsigned len)
     // precondition: len < 16 ( so that we only need to worry about current and next word )
     // precondition: loc is a result of flash_find_space, executed after last flash_alloc
@@ -120,7 +127,15 @@ uint8_t *flash_alloc(flash_loc_t *loc, unsigned len)
         }
     }
 
-    p = STORE_ADDR + (loc->word_idx * 16) + loc->bit_idx;
+    p = STORE_ADDR + (loc->word_idx << 4) + loc->bit_idx;
+
+    // update loc to point to next free bit
+    if (in_second_word) {
+        ++loc->word_idx;
+        loc->bit_idx = in_second_word;
+    } else {
+        loc->bit_idx += in_first_word;
+    }
 
 exit:
     LOG("FM: alloced: 0x%04x\r\n", (uint16_t)p);
