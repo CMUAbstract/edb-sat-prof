@@ -12,6 +12,9 @@
 #define COMP_VBANK(...)  COMP(COMP_TYPE_VBANK, __VA_ARGS__)
 #define COMP2_VBANK(...) COMP2(COMP_TYPE_VBANK, __VA_ARGS__)
 
+// We write from here to flash, and we keep flash addresses aligned, so that we
+// can write words, instead of bytes. This source buffer must also be aligned.
+__attribute__((aligned(2)))
 profile_t profile;
 
 volatile bool profiling_vcap_ok = false;
