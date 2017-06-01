@@ -92,7 +92,7 @@ int main(void)
 
             LOG("collect profile: turn on app supply\r\n");
 
-            uartlink_open();
+            uartlink_open_rx();
 
             GPIO(PORT_APP_SW, OUT) |= BIT(PIN_APP_SW);
             GPIO(PORT_APP_SW, DIR) |= BIT(PIN_APP_SW);
