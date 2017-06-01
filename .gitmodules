@@ -25,3 +25,6 @@
 [submodule "ext/libcapybara"]
 	path = ext/libcapybara
 	url = /afs/ece.cmu.edu/project/abstract/repos/libcapybara
+[submodule "ext/libmspuartlink"]
+	path = ext/libmspuartlink
+	url = /afs/ece.cmu.edu/project/abstract/repos/libmspuartlink
