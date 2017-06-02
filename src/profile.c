@@ -5,6 +5,7 @@
 #include <libmsp/sleep.h>
 #include <libedbserver/codepoint.h>
 #include <libedbserver/pin_assign.h>
+#include <libedbserver/edb.h>
 
 #include <libedbserver/uart.h>
 
