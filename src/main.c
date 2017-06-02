@@ -41,7 +41,7 @@ static void handle_flash_op_outcome(unsigned rc) {
             capybara_shutdown();  // free bitmask not affected, so no need to panic-erase
             break;
         default:
-            LOG("saved pkt and desc to flash, shutting down\r\b");
+            LOG("saved pkt and desc to flash, shutting down\r\n");
             break;
     }
 }
@@ -123,6 +123,7 @@ int main(void)
                         for (int i = 0; i < app_data_len && i < MAX_APP_DATA_LEN; ++i) {
                             LOG("%02x ", app_data[i]);
                         }
+                        LOG("\r\n");
 
                         uartlink_close(); // we only allow one app data pkt per profiling run
 
