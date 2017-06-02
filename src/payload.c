@@ -134,7 +134,8 @@ void payload_record_app_output(const uint8_t *data, unsigned len)
 bool send_pkt(rad_pkt_union_t *pkt)
 {
     CRCINIRES = 0xFFFF; // init value for checksum
-    CRCDI = pkt->raw & RAD_PKT_CHKSUM_MASK; // mask chksum just in case caller didn't zero it
+    CRCDI = (uint16_t)(pkt->raw & RAD_PKT_CHKSUM_MASK); // mask chksum just in case caller didn't zero it
+    __delay_cycles(2); // word CRC takes 2 cycles, so need to delay by at least 1
     pkt->typed.chksum = CRCINIRES & RAD_PKT_CHKSUM_MASK;
     LOG("rad pkt chksum: %02x\r\n", pkt->typed.chksum);
     LOG("trasmiting pkt: 0x%04x\r\n", pkt->raw);
@@ -164,11 +165,12 @@ flash_status_t save_payload(flash_loc_t *loc, pkt_type_t pkt_type, uint8_t *pkt_
 
     CRCINIRES = 0xFFFF; // init value for checksum
     for (int i = 0; i < len; ++i)
-         CRCDI = *(pkt_data + i);
+         CRCDI_L = *(pkt_data + i);
     pkt_desc.typed.header.typed.pay_chksum = CRCINIRES & 0x0f;
 
     CRCINIRES = 0xFFFF; // init value for checksum
-    CRCDI = pkt_desc.typed.header.raw;
+    CRCDI = (uint16_t)pkt_desc.typed.header.raw;
+    __delay_cycles(2); // word CRC takes 2 cycles, so need to delay by at least 1
     pkt_desc.typed.header.typed.hdr_chksum = CRCINIRES & 0x0f;
 
     LOG("chksum: hdr %02x payload %02x\r\n",
@@ -201,7 +203,8 @@ flash_status_t save_payload(flash_loc_t *loc, pkt_type_t pkt_type, uint8_t *pkt_
 static bool is_pkt_header_valid(pkt_header_union_t *hdr)
 {
     CRCINIRES = 0xFFFF; // init value for checksum
-    CRCDI = PKT_HDR_DATA(hdr->raw);
+    CRCDI = (uint16_t)PKT_HDR_DATA(hdr->raw);
+    __delay_cycles(2); // word takes 2 cycles, so need to delayat least by 1
     unsigned hdr_chksum = CRCINIRES & 0x0f;
     if (hdr_chksum != hdr->typed.hdr_chksum) {
         LOG("pkt header checksum mismatch (%02x != %02x): igoring pkt\r\n",
@@ -261,7 +264,7 @@ bool transmit_saved_payload()
         saved_pkt_header = prev_saved_pkt_header;
         saved_pkt_addr = ((uint8_t*)saved_pkt_desc_addr) - saved_pkt_header.size - saved_pkt_header.padded;
 
-        prev_saved_pkt_desc_addr = saved_pkt_addr - 1 - PAYLOAD_DESC_SIZE - 1;
+        prev_saved_pkt_desc_addr = saved_pkt_addr - PAYLOAD_DESC_SIZE;
         LOG("prev pkt desc addr: 0x%04x\r\n", (uint16_t)prev_saved_pkt_desc_addr);
 
     } while (flash_addr_in_range(prev_saved_pkt_desc_addr));
@@ -279,7 +282,7 @@ bool transmit_saved_payload()
 
     CRCINIRES = 0xFFFF; // init value for checksum
     for(int i = 0; i < saved_pkt_header.size; ++i) {
-        CRCDI = *(saved_pkt_addr + i);
+        CRCDI_L = *(saved_pkt_addr + i);
     }
     unsigned pay_chksum = CRCINIRES & 0x0f;
     if (pay_chksum != saved_pkt_header.pay_chksum) {
