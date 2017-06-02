@@ -188,7 +188,7 @@ flash_status_t save_payload(flash_loc_t *loc, pkt_type_t pkt_type, uint8_t *pkt_
     }
     uint8_t *desc_addr = pkt_saved + len + padded;
     // assert !(desc_addr & 0x1) [word aligned]
-    if (!flash_write(pkt_saved, (uint8_t *)&profile, len)) {
+    if (!flash_write(pkt_saved, pkt_data, len)) {
         return FLASH_STATUS_WRITE_FAILED;
     }
     if (!flash_write(desc_addr, (uint8_t *)&pkt_desc.raw, PAYLOAD_DESC_SIZE)) {
