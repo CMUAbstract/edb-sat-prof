@@ -1,7 +1,5 @@
 #include <msp430.h>
 
-#include <libio/log.h>
-
 #include "power.h"
 
 // Read VBANK through a divider

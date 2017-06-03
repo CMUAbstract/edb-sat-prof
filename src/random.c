@@ -1,8 +1,9 @@
 #include <msp430.h>
 
 #include <stdlib.h>
+#include <stdint.h>
 
-#include <libio/log.h>
+#include <libio/console.h>
 
 // Seed random generator by reading an analog voltage from ADC (Vbank)
 void seed_random_from_adc()

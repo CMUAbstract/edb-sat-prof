@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include <libio/log.h>
+#include <libio/console.h>
 #include <libmsp/periph.h>
 #include <libmsp/sleep.h>
 #include <libedbserver/codepoint.h>

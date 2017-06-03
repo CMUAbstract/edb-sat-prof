@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #include <libmsp/watchdog.h>
-#include <libio/log.h>
+#include <libio/console.h>
 
 #include "flash.h"
 #include "bits.h"

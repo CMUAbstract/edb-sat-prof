@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 #include <libmsp/periph.h>
-#include <libio/log.h>
+#include <libio/console.h>
 
 #ifdef CONFIG_RADIO_TRANSMIT_PAYLOAD
 #include <libsprite/SpriteRadio.h>

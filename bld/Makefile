@@ -10,6 +10,7 @@ OBJECTS = \
 	random.o \
 
 DEPS += \
+	libio \
 	libmsp \
 	libedbserver \
 	libcapybara \
@@ -73,6 +74,7 @@ export LIBMSP_SLEEP_TIMER = A.1.0
 export LIBMSP_SLEEP_TIMER_CLK = ACLK
 export LIBMSP_SLEEP_TIMER_DIV = 8*2
 
+export LIBIO_BACKEND = swuart
 export LIBMSPSOFTUART_PORT_TX = 3.1
 export LIBMSPSOFTUART_BAUDRATE = 9600
 export LIBMSPSOFTUART_CLOCK_FREQ = $(MAIN_CLOCK_FREQ)
@@ -105,7 +107,3 @@ include ../Makefile.config
 
 # Need headers only, hence not a usual dep
 override CFLAGS += -I$(LIB_ROOT)/libedb/src/include
-
-# Unset this variable to disable console
-export CONFIG_PRINTF_LIB = libmspsoftuart
-include $(MAKER_ROOT)/Makefile.console

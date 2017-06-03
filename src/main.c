@@ -7,7 +7,7 @@
 #include <libmsp/clock.h>
 #include <libmsp/watchdog.h>
 #include <libcapybara/capybara.h>
-#include <libio/log.h>
+#include <libio/console.h>
 #include <libmspuartlink/uartlink.h>
 
 #include "payload.h"
