@@ -11,6 +11,7 @@ OBJECTS = \
 
 DEPS += \
 	libio \
+	libmspsoftuart \
 	libmsp \
 	libedbserver \
 	libcapybara \
