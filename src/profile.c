@@ -58,7 +58,12 @@ static void toggle_watchpoints(bool enable)
 {
     for (unsigned i = 0; i < NUM_CODEPOINT_PINS; ++i)
         toggle_watchpoint(i, /* enable */ enable, /* vcap snapshot */ true);
-    enable_watchpoints(); // actually enable the pins
+
+    // actually configure the pins
+    if (enable)
+        enable_watchpoints();
+    else
+        disable_watchpoints();
 }
 
 static msp_alarm_action_t on_profiling_timeout()
