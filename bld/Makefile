@@ -43,11 +43,16 @@ export CLOCK_FREQ_SMCLK = $(MAIN_CLOCK_FREQ)
 
 # Setpoint of voltage supply to EDB MCU (set by resistor divider in hardware)
 export VDD_EDB = 2.4 # V
+export VDD_AP_REF = 1.5 # V # must match libedbserver/src/adc.c
+export VDD_AP_DIV = 4.22:5.49
 # Stop profiling when supercap voltage drops below this threshold
 export PROFILING_VBANK_MIN = 2.0 # V
 
 # Stop profiling after this interval elapses
 export PROFILING_TIMEOUT_MS = 16000
+
+# Bins for energy histogram in the profile are defined by these boundaries
+export PROFILING_EHIST_BIN_EDGE_0 = 2.2 # V
 
 # Configuration for libedbserver
 export CONFIG_ENABLE_WATCHPOINTS = 1

@@ -66,52 +66,6 @@ void payload_send_beacon()
 #endif
 }
 
-#ifdef CONFIG_COLLECT_APP_OUTPUT
-void payload_send_app_output()
-{
-    // randomply pick one sensor and send only that
-
-    uint8_t sensor_idx = rand() % NUM_SENSORS;
-
-    uint8_t *pkt = (uint8_t *)(&payload.app_output) + sensor_idx * NUM_WINDOWS;
-    unsigned pkt_len = NUM_WINDOWS * sizeof(int8_t);
-
-    uint8_t header = (PKT_TYPE_APP_OUTPUT << 4) | (sensor_idx & 0x0f);
-
-    log_packet('A', header, pkt, pkt_len);
-
-#ifdef CONFIG_RADIO_TRANSMIT_PAYLOAD
-    SpriteRadio_SpriteRadio();
-    SpriteRadio_txInit();
-    SpriteRadio_transmit((char *)&header, sizeof(header));
-    SpriteRadio_transmit((char *)pkt, pkt_len);
-    SpriteRadio_sleep();
-#endif // CONFIG_RADIO_TRANSMIT_PAYLOAD
-}
-#endif // CONFIG_COLLECT_APP_OUTPUT
-
-#ifdef CONFIG_COLLECT_ENERGY_PROFILE
-void payload_send_profile()
-{
-    // randomply pick one watchpoint and send only that
-    int wp_idx = rand() % (NUM_EVENTS - 1); // 3rd watchpoint unused
-
-    uint8_t *pkt = (uint8_t *)(&payload.energy_profile.events[0] + wp_idx);
-    unsigned pkt_len = NUM_ENERGY_BYTES + 1; // 1 is for count; this is sizeof(event_t) without padding
-
-    uint8_t header = (PKT_TYPE_ENERGY_PROFILE << 4) | (wp_idx & 0x0f);
-
-    log_packet('E', header, pkt, pkt_len);
-
-#ifdef CONFIG_RADIO_TRANSMIT_PAYLOAD
-    SpriteRadio_txInit();
-    SpriteRadio_transmit((char *)&wp_idx, pkt_len);
-    SpriteRadio_transmit((char *)&pkt, pkt_len);
-    SpriteRadio_sleep();
-#endif // CONFIG_RADIO_TRANSMIT_PAYLOAD
-}
-#endif // COLLECT_ENERGY_PROFILE
-
 void payload_send()
 {
     log_packet('P', 0, (uint8_t *)&payload, sizeof(payload_t));

@@ -56,7 +56,7 @@ static bool arm_vcap_comparator()
 
 static void toggle_watchpoints(bool enable)
 {
-    for (unsigned i = 0; i < NUM_CODEPOINT_PINS; ++i)
+    for (unsigned i = 0; i < NUM_EVENTS; ++i)
         toggle_watchpoint(i, /* enable */ enable, /* vcap snapshot */ true);
 
     // actually configure the pins
@@ -103,65 +103,55 @@ void stop_profiling() {
     LOG("profiling stopped: vcap %u ovrflw %u timeout %u\r\n",
         profiling_vcap_ok, profiling_overflow, profiling_timeout);
 
-    LOG("profile: %u %u %u %u\r\n",
+    LOG("profile: %u %u:%u | %u %u:%u | %u %u:%u | %u %u:%u\r\n",
         profile.events[0].count,
+        profile.events[0].ehist_bin0,
+        profile.events[0].ehist_bin1,
         profile.events[1].count,
+        profile.events[1].ehist_bin0,
+        profile.events[1].ehist_bin1,
         profile.events[2].count,
-        profile.events[3].count);
+        profile.events[2].ehist_bin0,
+        profile.events[2].ehist_bin1,
+        profile.events[3].count,
+        profile.events[3].ehist_bin0,
+        profile.events[3].ehist_bin1);
+}
+
+// Returns true if overflowed
+static inline bool inc_with_overflow(uint8_t *addr, uint8_t max)
+{
+    if (*addr == max)
+        return true;
+    *addr = *addr + 1;
+    return false;
 }
 
 bool profile_event(unsigned index, uint16_t vcap)
 {
-    profile.events[index].count++;
-    if (profile.events[index].count == 0) { // overflow
-        // Disable watchpoints to avoid counting any other watchpoints, as soon as possible
-        __disable_interrupt();
-        toggle_watchpoints(false);
-        __enable_interrupt();
+    if (inc_with_overflow(&profile.events[index].count, PROFILE_COUNT_MASK))
+        goto overflow;
 
-        profile.events[index].count -= 1; // revert increment
-        profiling_overflow = true;
-        return true; // wake up the MCU
+    if (vcap > PROFILING_EHIST_BIN_EDGE_0) {
+        uint8_t cnt = profile.events[index].ehist_bin1;
+        if (inc_with_overflow(&cnt, PROFILE_EHIST_BIN_MASK))
+            goto overflow;
+        profile.events[index].ehist_bin1 = cnt;
+    } else {
+        uint8_t cnt = profile.events[index].ehist_bin0;
+        if (inc_with_overflow(&cnt, PROFILE_EHIST_BIN_MASK))
+            goto overflow;
+        profile.events[index].ehist_bin0 = cnt;
     }
-#if 0
-#ifdef CONFIG_PROFILE_SUB_BYTE_BUCKET_SIZES
-    unsigned quantum_idx = vcap / NUM_ENERGY_QUANTA; // this is wrong (see byte-based version below)
-    unsigned byte_idx = quantum_idx / NUM_ENERGY_QUANTA_PER_BYTE;
-    unsigned slot_idx = quantum_idx % NUM_ENERGY_QUANTA_PER_BYTE;
-
-    unsigned e_byte = profile.events[index].energy[byte_idx];
-    unsigned shift = slot_idx * NUM_ENERGY_BITS_PER_QUANTUM;
-    unsigned slot_mask = ENERGY_QUANTUM_MASK << shift;
-    unsigned e_slot = (e_byte & slot_mask) >> shift;
-    e_slot++;
-    e_byte = (e_byte & ~slot_mask) | (e_slot << shift);
-
-    profile.events[index].energy[byte_idx] = e_byte;
-#else
-    // Split the range [MIN_VOLTAGE, VREF (2.5v)] into NUM_ENERGY_BYTES buckets
-    // (one-byte per bucket), and count the values in each bucket.
-
-    unsigned byte_idx = (((float)vcap - CONFIG_ENERGY_PROFILE_MIN_VOLTAGE) /
-                        ((1 << 12) - CONFIG_ENERGY_PROFILE_MIN_VOLTAGE)) * NUM_ENERGY_BYTES;
-    if (byte_idx == NUM_ENERGY_BYTES)
-        --byte_idx;
-
-    uint8_t e = profile.events[index].energy[byte_idx];
-
-    e++;
-
-    if (e > 0) {
-        profile.events[index].energy[byte_idx] = e;
-    } else { // bucket overflowed, reset all buckets, to keep histogram consistent
-        for (int i = 0; i < NUM_ENERGY_BYTES; ++i)
-            profile.events[index].energy[i] = 0;
-        profile.events[index].count = 0;
-    }
-
-#endif // CONFIG_PROFILE_SUB_BYTE_BUCKET_SIZES
-#endif
 
     return false; // don't wakeup the MCU
+
+overflow:
+    // Disable watchpoints to avoid counting any other watchpoints, as soon as possible
+    toggle_watchpoints(false);
+
+    profiling_overflow = true;
+    return true; // wake up the MCU
 }
 
 __attribute__ ((interrupt(COMP_VECTOR(COMP_TYPE_VBANK))))
