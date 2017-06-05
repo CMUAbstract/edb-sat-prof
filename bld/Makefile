@@ -32,7 +32,7 @@ export WATCHDOG_INTERVAL = 8192K # 4 minutes
 export PIN_APP_SW = 3.7 # APP power rail switch
 export PIN_VBANK = 2.4 # divided Vbank voltage
 export COMP_CHAN_VBANK = B.4 # comparator channel for Vbank voltage
-export VBANK_DIV = 100:750 # adjusted for Rin of comparator
+export VBANK_DIV = 100:750
 export VBANK_COMP_SETTLE_MS = 2 # time (ms) before reading comparator
 
 # Can't get 8MHz exactly with 32768Hz DCOREF, closest is 7995392Hz or 8028160HzHz
