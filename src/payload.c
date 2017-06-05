@@ -19,44 +19,11 @@
 #include "flash.h"
 #include "bits.h"
 
-// TODO: HACK
-// From app: must match!
-#define NUM_SENSORS 7
-#define NUM_WINDOWS 4
-typedef struct _edb_info_t{
-  int8_t averages[NUM_SENSORS][NUM_WINDOWS];
-} edb_info_t;
-
-#if 0
-static payload_t payload; // EDB+App data sent to host/ground
-#else
-payload_t payload; // EDB+App data sent to host/ground
-#endif
-
-static uint8_t host_msg_buf[HOST_MSG_BUF_SIZE];
-static uint8_t * const host_msg_payload = &host_msg_buf[UART_MSG_HEADER_SIZE];
-
-static void log_packet(char type, uint8_t header, uint8_t *pkt, unsigned len)
-{
-    int i;
-    BLOCK_LOG_BEGIN();
-    BLOCK_LOG("tx: pkt %c:\r\n", type);
-    BLOCK_LOG("%02x ", header);
-    for (i = 0; i < len; ++i) {
-        BLOCK_LOG("%02x ", *((uint8_t *)pkt + i));
-
-        if (((i + 1 + 1) & (8 - 1)) == 0)
-            BLOCK_LOG("\r\n");
-    }
-    BLOCK_LOG("\r\n");
-    BLOCK_LOG_END();
-}
-
 void payload_send_beacon()
 {
-    uint8_t pkt = 0xED;
+    uint8_t pkt = BEACON;
 
-    log_packet('B', 0, &pkt, sizeof(pkt));
+    LOG("transmitting beacon: 0x%02x\r\n", pkt);
 
 #ifdef CONFIG_RADIO_TRANSMIT_PAYLOAD
     SpriteRadio_SpriteRadio(); // only one tx per boot, so init here
@@ -66,26 +33,7 @@ void payload_send_beacon()
 #endif
 }
 
-void payload_send()
-{
-    log_packet('P', 0, (uint8_t *)&payload, sizeof(payload_t));
-
-#ifdef CONFIG_RADIO_TRANSMIT_PAYLOAD
-    SpriteRadio_txInit();
-    SpriteRadio_transmit((char *)&payload, sizeof(payload_t));
-    SpriteRadio_sleep();
-#endif // CONFIG_RADIO_TRANSMIT_PAYLOAD
-}
-
-#ifdef CONFIG_COLLECT_APP_OUTPUT
-void payload_record_app_output(const uint8_t *data, unsigned len)
-{
-    ASSERT(ASSERT_APP_OUTPUT_BUF_OVERFLOW, len <= sizeof(payload.app_output));
-    memcpy(&payload.app_output, data, len);
-}
-#endif // CONFIG_COLLECT_APP_OUTPUT
-
-bool send_pkt(rad_pkt_union_t *pkt)
+bool payload_send_pkt(rad_pkt_union_t *pkt)
 {
     CRCINIRES = 0xFFFF; // init value for checksum
     CRCDI = (uint16_t)(pkt->raw & RAD_PKT_CHKSUM_MASK); // mask chksum just in case caller didn't zero it
@@ -257,7 +205,7 @@ bool transmit_saved_payload()
         .idx = unsent_byte_idx,
         .payload_byte = payload_byte
     } };
-    if (!send_pkt(&pkt)) {
+    if (!payload_send_pkt(&pkt)) {
         LOG("failed to send pkt\r\n");
         return false;
     }
