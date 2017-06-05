@@ -70,9 +70,8 @@ int main(void)
     seed_random_from_adc();
 #endif // CONFIG_SEED_RNG_FROM_VCAP
 
-    // Randomly choose which action to perform
-    //task_t task = rand() % NUM_TASKS;
-    task_t task = TASK_ENERGY_PROFILE;
+    // Randomly choose which action to perform: P=1/4
+    task_t task = ((rand() & 0x3) == 0) ? TASK_BEACON : TASK_ENERGY_PROFILE;
     LOG("task: %u\r\n", task);
 
     switch (task) {
