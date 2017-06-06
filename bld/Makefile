@@ -49,7 +49,7 @@ export VDD_AP_DIV = 4.22:5.49
 export PROFILING_VBANK_MIN = 2.0 # V
 
 # Stop profiling after this interval elapses
-export PROFILING_TIMEOUT_MS = 16000
+export PROFILING_TIMEOUT_MS = 30000
 
 # Bins for energy histogram in the profile are defined by these boundaries
 export PROFILING_EHIST_BIN_EDGE_0 = 2.2 # V
@@ -78,7 +78,7 @@ export LIBMSP_CORE_VOLTAGE_LEVEL = 2
 
 export LIBMSP_SLEEP_TIMER = A.1.0
 export LIBMSP_SLEEP_TIMER_CLK = ACLK
-export LIBMSP_SLEEP_TIMER_DIV = 8*2
+export LIBMSP_SLEEP_TIMER_DIV = 8*4
 
 export LIBIO_BACKEND = swuart
 export LIBMSPSOFTUART_PORT_TX = 3.1
