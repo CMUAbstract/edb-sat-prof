@@ -10,13 +10,13 @@ OBJECTS = \
 	random.o \
 
 DEPS += \
-	libio \
-	libmspsoftuart \
-	libmsp \
 	libedbserver \
 	libcapybara \
 	libsprite \
 	libmspuartlink \
+	libio \
+	libmsp \
+	libmspsoftuart \
 
 # Configuration local to this app executable
 export CONFIG_WATCHDOG = 1
