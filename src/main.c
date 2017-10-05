@@ -97,10 +97,6 @@ int main(void)
 
             LOG("collect profile: turn on app supply\r\n");
 
-            uartlink_open_rx();
-
-            GPIO(PORT_APP_SW, OUT) |= BIT(PIN_APP_SW);
-
             flash_loc_t loc;
             unsigned free_space = flash_find_space(PROFILE_SIZE + PAYLOAD_DESC_SIZE, &loc);
             LOG("free space in flash: %u (need %u)\r\n", free_space,
@@ -110,6 +106,10 @@ int main(void)
                 flash_erase();
                 capybara_shutdown();
             }
+
+            uartlink_open_rx();
+
+            GPIO(PORT_APP_SW, OUT) |= BIT(PIN_APP_SW);
 
             app_data_len = 0;
 
