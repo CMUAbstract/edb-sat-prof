@@ -30,6 +30,7 @@ export WATCHDOG_CLOCK = ACLK
 export WATCHDOG_INTERVAL = 8192K # 4 minutes
 
 export PIN_APP_SW = 3.7 # APP power rail switch
+export PIN_ISOL_EN = 2.6 # P-FETs that isolate EDB from the harvester
 export PIN_VBANK = 2.4 # divided Vbank voltage
 export COMP_CHAN_VBANK = B.4 # comparator channel for Vbank voltage
 export VBANK_DIV = 100:750

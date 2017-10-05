@@ -61,6 +61,9 @@ int main(void)
     GPIO(PORT_APP_SW, OUT) &= ~BIT(PIN_APP_SW);
     GPIO(PORT_APP_SW, DIR) |= BIT(PIN_APP_SW);
 
+    GPIO(PORT_ISOL_EN, OUT) &= ~BIT(PIN_ISOL_EN);
+    GPIO(PORT_ISOL_EN, DIR) |= BIT(PIN_ISOL_EN);
+
     capybara_config_pins();
 
     __enable_interrupt();
@@ -95,7 +98,7 @@ int main(void)
                 // move on, collect some data
             }
 
-            LOG("collect profile: turn on app supply\r\n");
+            LOG("collect profile: isolate and turn on app supply\r\n");
 
             flash_loc_t loc;
             unsigned free_space = flash_find_space(PROFILE_SIZE + PAYLOAD_DESC_SIZE, &loc);
@@ -109,6 +112,7 @@ int main(void)
 
             uartlink_open_rx();
 
+            GPIO(PORT_ISOL_EN, OUT) |= BIT(PIN_ISOL_EN);
             GPIO(PORT_APP_SW, OUT) |= BIT(PIN_APP_SW);
 
             app_data_len = 0;
@@ -140,8 +144,9 @@ int main(void)
 
             stop_profiling();
 
-            LOG("turn off app supply\r\n");
+            LOG("turn off app supply and reconnect harvester\r\n");
             GPIO(PORT_APP_SW, OUT) &= ~BIT(PIN_APP_SW);
+            GPIO(PORT_ISOL_EN, OUT) &= ~BIT(PIN_ISOL_EN);
 
             uartlink_close();
 
