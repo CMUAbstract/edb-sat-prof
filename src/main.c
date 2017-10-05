@@ -57,6 +57,10 @@ int main(void)
     P3OUT &= ~(BIT0 | BIT2 | BIT3);
     P3DIR |= BIT0 | BIT2 | BIT3;
 
+    // Pin config
+    GPIO(PORT_APP_SW, OUT) &= ~BIT(PIN_APP_SW);
+    GPIO(PORT_APP_SW, DIR) |= BIT(PIN_APP_SW);
+
     capybara_config_pins();
 
     __enable_interrupt();
@@ -96,7 +100,6 @@ int main(void)
             uartlink_open_rx();
 
             GPIO(PORT_APP_SW, OUT) |= BIT(PIN_APP_SW);
-            GPIO(PORT_APP_SW, DIR) |= BIT(PIN_APP_SW);
 
             flash_loc_t loc;
             unsigned free_space = flash_find_space(PROFILE_SIZE + PAYLOAD_DESC_SIZE, &loc);
