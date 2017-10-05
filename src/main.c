@@ -58,11 +58,13 @@ int main(void)
     P3DIR |= BIT0 | BIT2 | BIT3;
 
     capybara_config_pins();
+
+    __enable_interrupt();
+
     capybara_wait_for_supply();
 
     msp_clock_setup(); // set up unified clock system
     INIT_CONSOLE();
-    __enable_interrupt();
 
     LOG("EDBsat v1.2 - EDB MCU\r\n");
 
