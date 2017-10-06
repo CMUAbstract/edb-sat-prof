@@ -114,3 +114,6 @@ include ../Makefile.config
 
 # Need headers only, hence not a usual dep
 override CFLAGS += -I$(LIB_ROOT)/libedb/src/include
+
+# Disable note about ABI compatibility change in GCC version
+override CFLAGS += -Wno-packed-bitfield-compat

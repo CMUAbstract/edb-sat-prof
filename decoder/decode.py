@@ -38,8 +38,16 @@ PROFILE_NUM_EVENTS = 4 # see edb-sat/src/profile.h
 PROFILE_BINS = 2
 PROFILE_BITS_PER_BIN = 4
 
+PROFILE_FIELD_WIDTH_BIN = 5
+PROFILE_FIELD_WIDTH_COUNT = 6
+
 APPOUT_NUM_WINDOWS = 2
-APPOUT_VAL_BITS = 4
+APPOUT_NUM_AXES_MAG = 3
+APPOUT_NUM_AXES_ACCEL = 3
+
+APPOUT_FIELD_WIDTH_TEMP = 8
+APPOUT_FIELD_WIDTH_MAG = 4
+APPOUT_FIELD_WIDTH_ACCEL = 4
 
 PKT_SIZE_BY_TYPE = {
     PKT_TYPE_ENERGY_PROFILE: PROFILE_NUM_EVENTS * 2,
@@ -52,6 +60,34 @@ crc_alg = Crc(width=16,
               xor_out=0x0000,
               reflect_in=True,
               reflect_out=False)
+
+class FieldDecoder:
+    def __init__(self, data_bytes):
+        self.data_bytes = data_bytes[::-1] # reverse for poping
+        self.byte = None
+        self.bits = 0
+
+    def decode_field(self, width):
+        field = 0
+
+        for i in range(8):
+            if i >= width:
+                b = 0
+            else:
+                if self.bits == 0:
+                    if len(self.data_bytes) == 0:
+                        raise Exception("Failed to decode field: insufficient bits in input stream")
+                    self.byte = self.data_bytes.pop()
+                    self.bits = 8
+
+                b = self.byte & 0x1
+                self.byte >>= 1
+                self.bits -= 1
+
+            field >>= 1
+            field |= b << 7
+
+        return field
 
 def read_hex(f):
     n = None
@@ -107,45 +143,40 @@ def format_pkt(f, payload_type, payload):
             (PKT_TYPE_TO_STRING[payload_type], " ".join(["%02x" % b for b in payload])))
 
     if payload_type == PKT_TYPE_ENERGY_PROFILE:
+
+        field_dec = FieldDecoder(payload)
         
         f.write(">>> PROFILE: ")
 
         p = 0
         for i in range(PROFILE_NUM_EVENTS):
-            count = payload[p]
-            p += 1
             bins = []
             for j in range(PROFILE_BINS):
-                c = (payload[p] & ((~(~0 << PROFILE_BITS_PER_BIN)) << (j * PROFILE_BITS_PER_BIN))) >> \
-                        (j * PROFILE_BITS_PER_BIN)
+                c = field_dec.decode_field(PROFILE_FIELD_WIDTH_BIN)
                 bins.append(c)
-            p += 1
+            count = field_dec.decode_field(PROFILE_FIELD_WIDTH_COUNT)
 
             f.write("| %u [%s] " % (count, ":".join(map(str, bins))))
         f.write("\n")
 
     elif payload_type == PKT_TYPE_APP_OUTPUT:
+        field_dec = FieldDecoder(payload)
+
         f.write(">>> APPOUT: ")
 
-        p = 0
-
         for i in range(APPOUT_NUM_WINDOWS):
-            temp = payload[p + 0]
-            my = twocomp((payload[p + 1] & 0xF0) >> 4, APPOUT_VAL_BITS)
-            mx = twocomp((payload[p + 1] & 0x0F) >> 0, APPOUT_VAL_BITS)
-            ax = twocomp((payload[p + 2] & 0xF0) >> 4, APPOUT_VAL_BITS)
-            mz = twocomp((payload[p + 2] & 0x0F) >> 0, APPOUT_VAL_BITS)
-            az = twocomp((payload[p + 3] & 0xF0) >> 4, APPOUT_VAL_BITS)
-            ay = twocomp((payload[p + 3] & 0x0F) >> 0, APPOUT_VAL_BITS)
+            temp = twocomp(field_dec.decode_field(APPOUT_FIELD_WIDTH_TEMP), APPOUT_FIELD_WIDTH_TEMP)
 
-            p += 4
+            m = []
+            for i in range(APPOUT_NUM_AXES_MAG):
+                m.append(twocomp(field_dec.decode_field(APPOUT_FIELD_WIDTH_MAG), APPOUT_FIELD_WIDTH_MAG))
+            a = []
+            for i in range(APPOUT_NUM_AXES_ACCEL):
+                a.append(twocomp(field_dec.decode_field(APPOUT_FIELD_WIDTH_ACCEL), APPOUT_FIELD_WIDTH_ACCEL))
 
-            f.write("[t %u m (%d,%d,%d) a (%d,%d,%d)] " % \
-                    (temp, mx, my, mz, ax, ay, az))
-
+            f.write("[temp %u mag (%s) accel (%s)] " % \
+                    (temp, ",".join(map(str, m)), ",".join(map(str,a))))
         f.write("\n")
-
-
 
 if args.data_in:
     if args.hex:

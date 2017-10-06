@@ -129,16 +129,20 @@ static inline bool inc_with_overflow(uint8_t *addr, uint8_t max)
 
 bool profile_event(unsigned index, uint16_t vcap)
 {
-    if (inc_with_overflow(&profile.events[index].count, PROFILE_COUNT_MASK))
+    uint8_t cnt;
+
+    cnt = profile.events[index].count;
+    if (inc_with_overflow(&cnt, PROFILE_COUNT_MASK))
         goto overflow;
+    profile.events[index].count = cnt;
 
     if (vcap > PROFILING_EHIST_BIN_EDGE_0) {
-        uint8_t cnt = profile.events[index].ehist_bin1;
+        cnt = profile.events[index].ehist_bin1;
         if (inc_with_overflow(&cnt, PROFILE_EHIST_BIN_MASK))
             goto overflow;
         profile.events[index].ehist_bin1 = cnt;
     } else {
-        uint8_t cnt = profile.events[index].ehist_bin0;
+        cnt = profile.events[index].ehist_bin0;
         if (inc_with_overflow(&cnt, PROFILE_EHIST_BIN_MASK))
             goto overflow;
         profile.events[index].ehist_bin0 = cnt;

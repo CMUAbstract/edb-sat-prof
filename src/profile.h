@@ -5,13 +5,13 @@
 #include <stdbool.h>
 
 #define NUM_EVENTS             4    // num watchpoints
-#define PROFILE_EHIST_BIN_MASK 0x0F // must match the bitfield length in event_t
-#define PROFILE_COUNT_MASK     0xFF // must match the bitfield length in event_t
+#define PROFILE_EHIST_BIN_MASK 0x1F // must match the bitfield length in event_t
+#define PROFILE_COUNT_MASK     0xFC // must match the bitfield length in event_t
 
 typedef struct __attribute__((packed)) {
-    uint8_t count;
-    uint8_t ehist_bin0:4;
-    uint8_t ehist_bin1:4;
+    uint8_t ehist_bin0:5;
+    uint8_t ehist_bin1:5;
+    uint8_t count:6;
 } event_t;
 
 typedef struct __attribute__((packed)) {
