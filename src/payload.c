@@ -49,7 +49,7 @@ bool payload_send_pkt(rad_pkt_union_t *pkt)
     SpriteRadio_sleep();
 #endif // CONFIG_RADIO_TRANSMIT_PAYLOAD
 
-    LOG("trasmit finished\r\n");
+    LOG("tx done\r\n");
     return true;
 }
 
