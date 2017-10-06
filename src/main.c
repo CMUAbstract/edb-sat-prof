@@ -41,7 +41,7 @@ static void handle_flash_op_outcome(unsigned rc) {
             capybara_shutdown();  // free bitmask not affected, so no need to panic-erase
             break;
         default:
-            LOG("saved pkt and desc to flash, shutting down\r\n");
+            LOG("saved pkt and desc to flash\r\n");
             break;
     }
 }
