@@ -53,11 +53,11 @@ typedef union __attribute__((packed)) {
 
 // Fixed-size packet sent over the radio
 typedef struct __attribute__((packed)) {
-    uint8_t payload_byte;
     // little-endian means these bits in mem are in opposite order
     unsigned idx:4;
     unsigned type:1;
     unsigned chksum:3;
+    uint8_t payload_byte;
 } rad_pkt_t;
 
 #define RAD_PKT_CHKSUM_MASK 0x0007
