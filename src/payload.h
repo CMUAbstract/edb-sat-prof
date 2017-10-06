@@ -12,8 +12,9 @@
 typedef enum {
     // BEACON: does not a type: determined from content
     // also, beacons are not saved in flash before transmission
-    PKT_TYPE_ENERGY_PROFILE     = 1,
-    PKT_TYPE_APP_OUTPUT         = 2,
+    PKT_TYPE_ENERGY_PROFILE     = 0,
+    PKT_TYPE_APP_OUTPUT         = 1,
+    // NOTE: field size is 1 bit
 } pkt_type_t;
 
 #define BEACON 0xED
@@ -26,7 +27,7 @@ typedef struct __attribute__((packed)) {
         unsigned pay_chksum:4;
         unsigned size:4; // bytes
         unsigned padded:1; // whether the pkt payload size is odd
-        pkt_type_t type:3; // don't need this many bits, but using up whole byte anyway
+        pkt_type_t type:1;
 } pkt_header_t;
 
 #define PKT_HDR_DATA(h) (h & 0xfff0) // mask hdr_checksum
