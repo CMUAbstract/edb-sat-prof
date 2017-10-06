@@ -47,7 +47,7 @@ export VDD_EDB = 2.4 # V
 export VDD_AP_REF = 1.5 # V # must match libedbserver/src/adc.c
 export VDD_AP_DIV = 4.22:5.49
 # Stop profiling when supercap voltage drops below this threshold
-export PROFILING_VBANK_MIN = 1.9 # V
+export PROFILING_VBANK_MIN = 2.0 # V
 
 # Stop profiling after this interval elapses
 export PROFILING_TIMEOUT_MS = 30000
