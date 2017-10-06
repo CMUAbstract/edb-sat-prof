@@ -35,12 +35,14 @@ void payload_send_beacon()
 
 bool payload_send_pkt(rad_pkt_union_t *pkt)
 {
+    uint16_t pkt_raw = pkt->raw;
     CRCINIRES = 0xFFFF; // init value for checksum
-    CRCDI = (uint16_t)(pkt->raw & RAD_PKT_CHKSUM_MASK); // mask chksum just in case caller didn't zero it
+    CRCDI = pkt_raw;
     __delay_cycles(2); // word CRC takes 2 cycles, so need to delay by at least 1
-    pkt->typed.chksum = CRCINIRES & RAD_PKT_CHKSUM_MASK;
-    LOG("rad pkt chksum: %02x\r\n", pkt->typed.chksum);
-    LOG("trasmiting pkt: 0x%04x\r\n", pkt->raw);
+    uint16_t chksum = CRCINIRES;
+    pkt->typed.chksum = chksum & RAD_PKT_CHKSUM_MASK;
+    LOG("tx pkt: raw %04x chksum %02x pktchksum %02x pkt %04x\r\n",
+        pkt_raw, chksum, pkt->typed.chksum, pkt->raw);
 
 #ifdef CONFIG_RADIO_TRANSMIT_PAYLOAD
     SpriteRadio_SpriteRadio(); // only one tx per boot, so init here
