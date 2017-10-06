@@ -56,10 +56,10 @@ bool payload_send_pkt(rad_pkt_union_t *pkt)
 }
 
 // 'loc' must be the result of a successful call to flash_find_space()
-// Len < 2^16
+// Len < 2^4
 flash_status_t save_payload(flash_loc_t *loc, pkt_type_t pkt_type, uint8_t *pkt_data, unsigned len)
 {
-    pkt_desc_union_t pkt_desc = { .typed = { .sent_mask = 0xFFFF >> (16 - len),
+    pkt_desc_union_t pkt_desc = { .typed = { .sent_mask = 0xFFFF >> (16 - (len + 1 /* multibyte pkt header */)),
                                              .header = { .typed = { .type = pkt_type,
                                                                     .size = len,
                                                                     .padded = (loc->bit_idx & 0x1) ^ (len & 0x1),
@@ -196,15 +196,29 @@ bool transmit_saved_payload()
     }
 
     unsigned sent_mask_offset = 16 - saved_pkt_header.size;
-    uint8_t unsent_byte_idx = find_first_set_bit_in_word(saved_pkt_desc.sent_mask) - sent_mask_offset;
-    // assert unsent_byte_idx < 16 because we checked for zero above
-    LOG("unsent byte idx: %u\r\n", unsent_byte_idx);
-    uint8_t payload_byte = *(saved_pkt_addr + unsent_byte_idx);
+    uint8_t first_sent_bit_idx = find_first_set_bit_in_word(saved_pkt_desc.sent_mask);
+    LOG("sent mask off %u first sent bit %u\r\n", sent_mask_offset, first_sent_bit_idx);
+
+    uint8_t payload_byte, byte_idx;
+    // Is the sent mask pointing to payload byte "at index -1"? If so, this means
+    // it is time to generate a header for the multibyte pkt on-the-fly (not saved in flash).
+    if (first_sent_bit_idx + 1 == sent_mask_offset) {
+        multibyte_pkt_hdr_union_t mb_pkt_hdr = { .typed = { .size = saved_pkt_header.size,
+                                                            .chksum = saved_pkt_header.pay_chksum } };
+        byte_idx = 0;
+        payload_byte = mb_pkt_hdr.raw;
+    } else { // we're pointing inside the payload
+        uint8_t unsent_byte_idx = first_sent_bit_idx - sent_mask_offset;
+        // assert unsent_byte_idx < 16 because we checked for zero above
+        payload_byte = *(saved_pkt_addr + unsent_byte_idx);
+        byte_idx = unsent_byte_idx + 1;
+    }
+    LOG("byte idx %u payload byte: %02x\r\n", byte_idx, payload_byte);
 
     rad_pkt_union_t pkt = { .typed = {
         .chksum = 0,
         .type = saved_pkt_header.type,
-        .idx = unsent_byte_idx,
+        .idx = byte_idx, // 0th is the header for the multibyte pkt
         .payload_byte = payload_byte
     } };
     if (!payload_send_pkt(&pkt)) {
@@ -212,7 +226,7 @@ bool transmit_saved_payload()
         return false;
     }
 
-    saved_pkt_desc.sent_mask &= ~(1 << (15 - sent_mask_offset - unsent_byte_idx));
+    saved_pkt_desc.sent_mask &= ~(1 << (15 - sent_mask_offset - byte_idx + 1 /* multibyte pkt header */));
     LOG("markig pkt at 0x%04x as sent: sent mask 0x%04x\r\n", (uint16_t)saved_pkt_desc_addr, saved_pkt_desc.sent_mask);
     flash_write_word((uint16_t *)saved_pkt_desc_addr, saved_pkt_desc.sent_mask);
     LOG("updated sent mask: @0x%04x [0x%04x]\r\n", (uint16_t)saved_pkt_desc_addr, *(uint16_t *)saved_pkt_desc_addr);

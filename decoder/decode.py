@@ -34,6 +34,10 @@ PKT_TYPE_TO_STRING = {
     PKT_TYPE_APP_OUTPUT: "APPOUT",
 }
 
+MB_HDR_FIELD_WIDTH_CHKSUM = 4
+MB_HDR_FIELD_WIDTH_SIZE = 4
+MB_HDR_CHKSUM_MASK = 0xF
+
 PROFILE_NUM_EVENTS = 4 # see edb-sat/src/profile.h
 PROFILE_BINS = 2
 PROFILE_BITS_PER_BIN = 4
@@ -138,11 +142,20 @@ def crc(b):
     #print("CHK: %02x" % crc_alg.bit_by_bit_fast(b"123456789"))
     return crc_alg.bit_by_bit_fast(bytearray(b))
 
+def parse_multibyte_header(h):
+    fd = FieldDecoder([h])
+    size = fd.decode_field(MB_HDR_FIELD_WIDTH_SIZE)
+    chksum = fd.decode_field(MB_HDR_FIELD_WIDTH_CHKSUM)
+    return chksum, size
+
 def format_pkt(f, payload_type, payload):
-    f.write("%s: %s\n" % \
+    print("%s: %s" % \
             (PKT_TYPE_TO_STRING[payload_type], " ".join(["%02x" % b for b in payload])))
 
-    if payload_type == PKT_TYPE_ENERGY_PROFILE:
+    if payload_type == PKT_TYPE_BEACON:
+        f.write(">>> BEACON\n")
+
+    elif payload_type == PKT_TYPE_ENERGY_PROFILE:
 
         field_dec = FieldDecoder(payload)
         
@@ -196,8 +209,10 @@ STATE_NONE = 0
 STATE_HDR  = 1
 
 PAYLOAD_STATE_NONE = 0
-PAYLOAD_STATE_DATA = 1
-PAYLOAD_STATE_DATA_RETRY = 2
+PAYLOAD_STATE_HDR = 1
+PAYLOAD_STATE_HDR_RETRY = 2
+PAYLOAD_STATE_DATA = 3
+PAYLOAD_STATE_DATA_RETRY = 4
 
 state = STATE_NONE
 payload_state = PAYLOAD_STATE_NONE
@@ -241,8 +256,6 @@ while fin:
             print_err("invalid pkt type: ", pkt_type)
             continue
 
-        payload_size = PKT_SIZE_BY_TYPE[pkt_type]
-
         state = STATE_HDR
 
     elif state == STATE_HDR:
@@ -258,9 +271,21 @@ while fin:
 
         if payload_state == PAYLOAD_STATE_NONE:
 
-            payload_type = pkt_type
-            payload = [data_byte]
+            payload_chksum, payload_size = parse_multibyte_header(data_byte)
 
+            # This check is optional
+            if payload_size != PKT_SIZE_BY_TYPE[pkt_type]:
+                print_err("payload size mismatch:", payload_size, "(expected", PKT_SIZE_BY_TYPE[pkt_type], ")")
+
+                if payload_state == PAYLOAD_STATE_HDR:
+                    payload_state = PAYLOAD_STATE_HDR_RETRY
+                elif payload_state == PAYLOAD_STATE_HDR_RETRY:
+                    payload_state = PAYLOAD_STATE_NONE
+
+                continue
+
+            payload_type = pkt_type
+            payload = []
             payload_state = PAYLOAD_STATE_DATA
 
         elif payload_state in [PAYLOAD_STATE_DATA, PAYLOAD_STATE_DATA_RETRY]:
@@ -278,7 +303,7 @@ while fin:
                 inbuf.append(b) # put back
                 continue
 
-            if pkt_idx != len(payload):
+            if pkt_idx != len(payload) + 1: # +1 for header of multibyte pkt
                 print_err("payload chunk idx mismatch:", pkt_idx, "(expected", len(payload), ")")
                 #payload_state = PAYLOAD_STATE_NONE # TODO
 
@@ -294,10 +319,17 @@ while fin:
             payload.append(data_byte)
 
             if len(payload) == payload_size:
+
+                actual_chksum = crc(payload) & MB_HDR_CHKSUM_MASK
+                if payload_chksum != actual_chksum:
+                    print_err("payload chksum mismatch:", actual_chksum, "(expected", payload_chksum, ")")
+                    payload_state = PAYLOAD_STATE_NONE
+                    continue
+
                 print("pkt decoded: type", payload_type, "payload", payload);
                 format_pkt(fout, payload_type, payload)
                 payload_state = PAYLOAD_STATE_NONE
-            elif len(payload) > payload_size:
+            elif len(payload) > payload_size: # TODO: shouldn't happen
                 payload_state = PAYLOAD_STATE_NONE
 
         state = STATE_NONE

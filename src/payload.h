@@ -25,7 +25,7 @@ typedef struct __attribute__((packed)) {
         // little-endian means these bits in mem are in opposite order
         unsigned hdr_chksum:4;
         unsigned pay_chksum:4;
-        unsigned size:4; // bytes
+        unsigned size:4; // bytes (15 bytes max)
         unsigned padded:1; // whether the pkt payload size is odd
         pkt_type_t type:1;
 } pkt_header_t;
@@ -39,7 +39,7 @@ typedef union __attribute__((packed)) {
 
 // Packet descriptor to hold info about a packet in NV memory
 typedef struct __attribute__((packed)) {
-    uint16_t sent_mask; // could shrink to 1 word if we can send 2 payload bytes at a time
+    uint16_t sent_mask; // 15 bytes of payload max, because 1 bit marks header of multibyte pkt
     pkt_header_union_t header;
 } pkt_desc_t;
 
@@ -50,6 +50,16 @@ typedef union __attribute__((packed)) {
 #define PAYLOAD_DESC_SIZE 4 // bytes
 
 #define AS_PKT_DESC(addr) (*((uint32_t *)addr))
+
+typedef struct __attribute__((packed)) {
+    unsigned size:4;
+    unsigned chksum:4; // payload checksum
+} multibyte_pkt_hdr_t;
+
+typedef union __attribute__((packed)) {
+    multibyte_pkt_hdr_t typed;
+    uint8_t raw;
+} multibyte_pkt_hdr_union_t;
 
 // Fixed-size packet sent over the radio
 typedef struct __attribute__((packed)) {
