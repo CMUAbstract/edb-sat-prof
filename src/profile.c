@@ -93,7 +93,7 @@ void start_profiling()
 
 bool continue_profiling()
 {
-    return profiling_vcap_ok && !profiling_overflow && !profiling_timeout;
+    return profiling_vcap_ok && !profiling_timeout;
 }
 
 void stop_profiling() {
