@@ -1,27 +1,27 @@
 [submodule "ext/libedbserver"]
 	path = ext/libedbserver
-	url = /afs/ece.cmu.edu/project/abstract/repos/edb/edb-firmware
+	url = https://github.com/CMUAbstract/edb/edb-firmware
 [submodule "ext/libedb"]
 	path = ext/libedb
-	url = /afs/ece.cmu.edu/project/abstract/repos/edb/libedb
+	url = https://github.com/CMUAbstract/edb/libedb
 [submodule "ext/maker"]
 	path = ext/maker
-	url = /afs/ece.cmu.edu/project/abstract/repos/maker
+	url = https://github.com/CMUAbstract/maker
 [submodule "ext/libsprite"]
 	path = ext/libsprite
-	url = /afs/ece.cmu.edu/project/abstract/repos/libsprite
+	url = https://github.com/CMUAbstract/libsprite
 [submodule "ext/libio"]
 	path = ext/libio
-	url = /afs/ece.cmu.edu/project/abstract/repos/libio
+	url = https://github.com/CMUAbstract/libio
 [submodule "ext/libmsp"]
 	path = ext/libmsp
-	url = /afs/ece.cmu.edu/project/abstract/repos/libmsp
+	url = https://github.com/CMUAbstract/libmsp
 [submodule "ext/libmspsoftuart"]
 	path = ext/libmspsoftuart
-	url = /afs/ece.cmu.edu/project/abstract/repos/msp430-softuart
+	url = https://github.com/CMUAbstract/msp430-softuart
 [submodule "ext/libcapybara"]
 	path = ext/libcapybara
-	url = /afs/ece.cmu.edu/project/abstract/repos/libcapybara
+	url = https://github.com/CMUAbstract/libcapybara
 [submodule "ext/libmspuartlink"]
 	path = ext/libmspuartlink
-	url = /afs/ece.cmu.edu/project/abstract/repos/libmspuartlink
+	url = https://github.com/CMUAbstract/libmspuartlink
