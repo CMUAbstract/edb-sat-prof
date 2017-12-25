@@ -4,8 +4,8 @@ import argparse
 import sys
 import select
 
-from decoder import *
-from display import *
+from edbsat.decoder import *
+from edbsat.display import *
 
 parser = argparse.ArgumentParser(
     description="Parse packet data from EDBsat recorded by SDR dongle")
