@@ -80,12 +80,12 @@ else:
     fin = sys.stdin
 
 if args.output:
-    fout = open(args.output, "w")
+    fout = open(args.output, "a")
 else:
     fout = sys.stdout
 
 if args.output_bytes:
-    output_bytes = open(args.output_bytes, "wb")
+    output_bytes = open(args.output_bytes, "ab")
 
 def format_pkt(payload_type, payload):
     s = ""
