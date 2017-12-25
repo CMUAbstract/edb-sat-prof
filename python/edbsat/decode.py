@@ -86,6 +86,8 @@ else:
 
 if args.output_bytes:
     output_bytes = open(args.output_bytes, "ab")
+else:
+    output_bytes = None
 
 def format_pkt(payload_type, payload):
     s = ""
