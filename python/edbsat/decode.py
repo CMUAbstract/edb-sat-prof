@@ -190,6 +190,7 @@ while True:
 
             pkt_str = format_pkt(payload_type, payload)
             fout.write(pkt_str + "\n")
+            fout.flush()
             display.show_pkt(pkt_str)
 
     if args.display and not put_back:
