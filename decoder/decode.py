@@ -17,6 +17,8 @@ parser.add_argument("--display", "-d",
                     help="serial port of ODROIDshow LCD screen (e.g., /dev/ttyUSB0)")
 parser.add_argument('--output', '-o',
     help="Output file with parsed packets (text)")
+parser.add_argument('--output-bytes',
+    help="Output file where to save received bytes (binary)")
 args = parser.parse_args()
 
 PKT_TYPE_TO_STRING = {
@@ -81,6 +83,9 @@ if args.output:
     fout = open(args.output, "w")
 else:
     fout = sys.stdout
+
+if args.output_bytes:
+    output_bytes = open(args.output_bytes, "wb")
 
 def format_pkt(payload_type, payload):
     s = ""
@@ -157,6 +162,10 @@ while True:
                 continue # no token, keep going
         else:
             new_b = bs[0]
+
+        if output_bytes is not None:
+            output_bytes.write(bytes([new_b]))
+            output_bytes.flush()
 
         inbuf = [int(new_b)] + inbuf
 
