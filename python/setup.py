@@ -13,8 +13,8 @@ setup(
 
     install_requires=[
         'argparse',
-        'pycrc',
         'odroidshow',
+        #'pycrc', # not a PIP package (installed from distro package pycrc)
     ],
 
     entry_points={
