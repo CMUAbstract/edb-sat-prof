@@ -9,8 +9,8 @@ pkgdesc='Ground station software for EDBsat'
 arch=('armv7h' 'aarch64' 'x86_64' 'i686')
 url='https://github.com/CMUAbstract/releases/blob/master/EDBsat.md'
 license=('custom:Unlicense')
-#depends=('sprite-groundstation' 'python' 'python-argparse' 'pycrc' 'python-odroidshow' 'util-linux'
-#         'arm-perfcnt-module-dkms')
+depends=('sprite-groundstation' 'python' 'python-argparse' 'pycrc' 'python-odroidshow' 'util-linux'
+         'arm-perfcnt-module-dkms')
 source=('edbsat-ground-daemon'
 	    'edbsat-ground.conf'
 	    'edbsat-ground.service'
