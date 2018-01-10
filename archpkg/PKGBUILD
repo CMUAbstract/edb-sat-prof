@@ -1,0 +1,44 @@
+# Maintainer: Alexei Colin <ac@alexeicolin.com>
+
+pkgname=edbsat-ground
+_repodir=edb-sat-prof
+
+pkgver=r166.67584e4
+pkgrel=1
+pkgdesc='Ground station software for EDBsat'
+arch=('armv7h' 'aarch64' 'x86_64' 'i686')
+url='https://github.com/CMUAbstract/releases/blob/master/EDBsat.md'
+license=('custom:Unlicense')
+#depends=('sprite-groundstation' 'python' 'python-argparse' 'pycrc' 'python-odroidshow' 'util-linux'
+#         'arm-perfcnt-module-dkms')
+source=('edbsat-ground-daemon'
+	    'edbsat-ground.conf'
+	    'edbsat-ground.service'
+	    'edbsat-ground.modules')
+
+md5sums=('bd4ea86c1963aec5b028566fc926c77f'
+         '531d2bd557f99c4f856b0c70ed1306d3'
+         '3a7bf00fa601e68f170a1234a67b0ead'
+         'ecd1786489353248977582942e0e2a32')
+
+install=edbsat-ground.install
+backup=('etc/edbsat-ground.conf')
+
+prepare() {
+    ln -snf "$startdir/.." "$srcdir/$pkgname"
+}
+
+pkgver() {
+    cd "${srcdir}/${pkgname}"
+    printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+package() {
+    cd "${srcdir}/${pkgname}/python"
+    python setup.py install --root="$pkgdir"
+
+    install -Dm755 ${srcdir}/edbsat-ground-daemon $pkgdir/usr/bin/edbsat-ground-daemon
+    install -Dm644 ${srcdir}/edbsat-ground.conf $pkgdir/etc/edbsat-ground.conf
+    install -Dm644 ${srcdir}/edbsat-ground.service $pkgdir/usr/lib/systemd/system/edbsat-ground.service
+    install -Dm644 ${srcdir}/edbsat-ground.modules $pkgdir/usr/lib/modules-load.d/edbsat-ground.conf
+}

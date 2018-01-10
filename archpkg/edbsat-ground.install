@@ -1,0 +1,7 @@
+post_install() {
+    getent passwd edbsat &>/dev/null || {
+        echo -n ">>> Creating edbsat user... "
+        useradd --system --user-group -G uucp -m --home /var/lib/edbsat edbsat
+        echo "done"
+    } # NOTE: do not remove user on uninstall, to not leave dangling files
+}

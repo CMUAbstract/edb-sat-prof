@@ -1,0 +1,11 @@
+[Unit]
+Description=Decode radio data from RTL dongle and show on LCD
+
+[Service]
+User=edbsat
+Group=edbsat
+ExecStart=/usr/bin/edbsat-ground-daemon
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

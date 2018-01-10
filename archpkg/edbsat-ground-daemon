@@ -1,0 +1,5 @@
+#!/usr/bin/bash
+
+set -e
+source /etc/edbsat-ground.conf
+taskset $CPU_AFFINITY SpriteReceiver2.py --prnid0=$PRN_0 --prnid1=$PRN_1 | edbsat-decode --hex -d $LCD_DEVICE --output $PKTS_FILE --output-bytes $BYTES_FILE
