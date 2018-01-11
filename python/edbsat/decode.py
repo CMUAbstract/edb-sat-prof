@@ -3,6 +3,8 @@
 import argparse
 import sys
 import select
+import re
+import subprocess
 
 from edbsat.decoder import *
 from edbsat.display import *
@@ -19,6 +21,10 @@ parser.add_argument('--output', '-o',
     help="Output file with parsed packets (text)")
 parser.add_argument('--output-bytes',
     help="Output file where to save received bytes (binary)")
+parser.add_argument('--start-cmd',
+    help="Shell command to execute on Button 0 press")
+parser.add_argument('--stop-cmd',
+    help="Shell command to execute on Button 1 press")
 args = parser.parse_args()
 
 PKT_TYPE_TO_STRING = {
@@ -127,11 +133,27 @@ def format_pkt(payload_type, payload):
                     (temp, ",".join(map(str, m)), ",".join(map(str,a)))
     return s
 
+def handle_event(ev_type, ev_arg):
+    if ev_type == 'BTN':
+        if ev_arg == '0':
+            cmd = args.start_cmd
+        elif ev_arg == '1':
+            cmd = args.stop_cmd
+        else:
+            cmd = None
+        if cmd is not None:
+            print("executing cmd: %s" % cmd)
+            cmd_args = cmd.split(' ')
+            cp = subprocess.run(cmd_args)
+            if cp.returncode != 0:
+                print("command '%s' failed: rc %u" % (" ".join(cmd_args), cp.returncode))
 
 inbuf = []
+event_str = ""
 
 if args.display:
     display = Display(port=args.display)
+    buttons_in = open(args.display, "rb")
 
 decoder = Decoder()
 
@@ -139,7 +161,11 @@ while True:
 
     if len(inbuf) == 0:
 
-        readable, writeable, exceptional = select.select([fin], [], [fin])
+        fds = [fin]
+        if args.display:
+            fds += [buttons_in]
+
+        readable, writeable, exceptional = select.select(fds, [], fds)
         if fin in exceptional:
             raise Exception("select encountered error")
 
@@ -157,6 +183,23 @@ while True:
                 if no_data:
                     time.sleep(1) # on fifo pipes, select returns (?)
                     continue # eof
+
+        if buttons_in in readable:
+            event_bytes = buttons_in.read(4096)
+            if len(event_bytes) == 0:
+                continue
+            for event_byte in event_bytes:
+                if event_byte == ord('\n'):
+                    m = re.match(r"(?P<type>[A-Za-z0-9]+):(?P<arg>\d+)", event_str.strip())
+                    if m is not None:
+                        event_type = m.group('type')
+                        event_arg = m.group('arg')
+                        print("EVENT: ", event_type, event_arg)
+                        handle_event(event_type, event_arg)
+                    event_str = ''
+                else:
+                    event_str += "%c" % event_byte
+            continue
 
         if args.hex:
             new_b = parse_hex(bs)
