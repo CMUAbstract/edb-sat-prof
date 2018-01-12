@@ -3,23 +3,34 @@
 pkgname=edbsat-ground
 _repodir=edb-sat-prof
 
-pkgver=r166.67584e4
+pkgver=0
 pkgrel=1
 pkgdesc='Ground station software for EDBsat'
 arch=('armv7h' 'aarch64' 'x86_64' 'i686')
 url='https://github.com/CMUAbstract/releases/blob/master/EDBsat.md'
 license=('custom:Unlicense')
-depends=('sprite-groundstation' 'python' 'python-argparse' 'pycrc' 'python-odroidshow' 'util-linux'
+depends=('sprite-groundstation' 'python' 'python-argparse' 'pycrc'
+         'python-odroidshow' 'python-pyserial' 'util-linux'
          'arm-perfcnt-module-dkms')
 source=('edbsat-ground-daemon'
-	    'edbsat-ground.conf'
-	    'edbsat-ground.service'
-	    'edbsat-ground.modules')
+	'edbsat-ground-controller'
+	'edbsat-ground-handler'
+	'edbsat-ground-toggle-service'
+	'edbsat-ground.conf'
+	'edbsat-ground.service'
+	'edbsat-ground-controller.service'
+	'edbsat-ground.modules'
+	'edbsat-ground.rules')
 
 md5sums=('bd4ea86c1963aec5b028566fc926c77f'
+         'eb785192ff503d3d6be08fa789d9efd2'
+         '0dea1465153f67e23a32bc512e799a35'
+         '610301739bc2b4b47a9720b216dcb0fb'
          '531d2bd557f99c4f856b0c70ed1306d3'
          '3a7bf00fa601e68f170a1234a67b0ead'
-         'ecd1786489353248977582942e0e2a32')
+         'ddf37b66c73d2b346ca15d946bcbf539'
+         'ecd1786489353248977582942e0e2a32'
+         '6f28480714cff53a7652dd98c3e29820')
 
 install=edbsat-ground.install
 backup=('etc/edbsat-ground.conf')
@@ -38,7 +49,14 @@ package() {
     python setup.py install --root="$pkgdir"
 
     install -Dm755 ${srcdir}/edbsat-ground-daemon $pkgdir/usr/bin/edbsat-ground-daemon
+    install -Dm755 ${srcdir}/edbsat-ground-controller $pkgdir/usr/bin/edbsat-ground-controller
+    install -Dm755 ${srcdir}/edbsat-ground-handler $pkgdir/usr/bin/edbsat-ground-handler
+    install -Dm755 ${srcdir}/edbsat-ground-toggle-service $pkgdir/usr/bin/edbsat-ground-toggle-service
     install -Dm644 ${srcdir}/edbsat-ground.conf $pkgdir/etc/edbsat-ground.conf
     install -Dm644 ${srcdir}/edbsat-ground.service $pkgdir/usr/lib/systemd/system/edbsat-ground.service
+    install -Dm644 ${srcdir}/edbsat-ground-controller.service $pkgdir/usr/lib/systemd/system/edbsat-ground-controller.service
     install -Dm644 ${srcdir}/edbsat-ground.modules $pkgdir/usr/lib/modules-load.d/edbsat-ground.conf
+
+    mkdir -p -m750 $pkgdir/usr/share/polkit-1/rules.d/
+    install -Dm644 ${srcdir}/edbsat-ground.rules $pkgdir/usr/share/polkit-1/rules.d/edbsat-ground.rules
 }

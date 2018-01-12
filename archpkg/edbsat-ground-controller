@@ -1,0 +1,5 @@
+#!/usr/bin/bash
+
+set -e
+source /etc/edbsat-ground.conf
+edbsat-ground-handler -d $LCD_DEVICE "B2=edbsat-ground-toggle-service edbsat-ground"

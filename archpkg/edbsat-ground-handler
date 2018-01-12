@@ -1,0 +1,55 @@
+#!/usr/bin/python
+
+import argparse
+import sys
+import select
+import re
+import subprocess
+import serial
+
+parser = argparse.ArgumentParser(
+    description="Handle button events from the UART from Odroid Show 2 device")
+parser.add_argument("--device", "-d",
+                    help="serial port of ODROIDshow LCD screen (e.g., /dev/ttyUSB0)")
+parser.add_argument('cmds', nargs='+',
+    help="Shell command to execute on button press, 'event=cmd'")
+args = parser.parse_args()
+
+cmds = {}
+for k, v in map(lambda e: e.split('='), args.cmds):
+    cmds[k] = v
+
+def handle_event(ev):
+    if ev in cmds:
+        cmd = cmds[ev]
+        print("executing cmd: %s" % cmd, file=sys.stderr)
+        sys.stderr.flush()
+        cmd_args = cmd.split(' ')
+        cp = subprocess.run(cmd_args)
+        if cp.returncode != 0:
+            print("command '%s' failed: rc %u" % (" ".join(cmd_args), cp.returncode), file=sys.stderr)
+
+buttons_ser = serial.Serial(port=args.device, baudrate=500000, timeout=1)
+event_str = ""
+
+while True:
+
+        readable, writeable, exceptional = select.select([buttons_ser.fileno()], [], [buttons_ser.fileno()])
+        if buttons_ser.fileno() in exceptional:
+            raise Exception("select encountered error")
+
+        if buttons_ser.fileno() in readable:
+            event_bytes = buttons_ser.read(1)
+            if len(event_bytes) == 0:
+                continue
+            for event_byte in event_bytes:
+                if event_byte == ord('\n'):
+                    m = re.match(r"EV:(?P<event>[A-Za-z0-9]+)", event_str.strip())
+                    if m is not None:
+                        event = m.group('event')
+                        print("EVENT: ", event, file=sys.stderr)
+                        handle_event(event)
+                    event_str = ''
+                else:
+                    event_str += "%c" % event_byte
+            continue

@@ -1,0 +1,11 @@
+[Unit]
+Description=Handle start/stop events from buttons on LCD screen
+
+[Service]
+User=edbsat
+Group=edbsat
+ExecStart=/usr/bin/edbsat-ground-controller
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

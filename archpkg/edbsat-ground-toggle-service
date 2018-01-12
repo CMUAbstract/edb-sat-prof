@@ -1,0 +1,10 @@
+#!/bin/bash
+
+SVC=$1
+
+if systemctl status $SVC >/dev/null
+then
+	systemctl stop $SVC
+else
+	systemctl start $SVC
+fi
