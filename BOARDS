@@ -1,0 +1,5 @@
+A,C - PRN 266,267
+B,D - PRN 268,269
+
+C: parallel, R43 not populated (bottom resistor populated), PRN 268,269
+A: series, R43 populated (top resistor populated), PRN 266,267
