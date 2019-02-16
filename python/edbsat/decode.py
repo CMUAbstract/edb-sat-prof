@@ -3,6 +3,7 @@
 import argparse
 import sys
 import select
+import time
 
 from edbsat.decoder import *
 from edbsat.display import *
