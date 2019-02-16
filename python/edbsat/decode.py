@@ -166,6 +166,8 @@ while True:
         else:
             new_b = bs[0]
 
+        print("Edit-distance to beacon:", decoder.edit_dist_to_beacon(new_b))
+
         if output_bytes is not None:
             output_bytes.write(bytes([new_b]))
             output_bytes.flush()
