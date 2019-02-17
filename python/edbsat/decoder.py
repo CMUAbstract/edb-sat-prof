@@ -219,16 +219,3 @@ class Decoder:
             self.state = STATE_NONE
 
         return None
-
-    def nbits(self, b):
-        n = 0
-        for i in range(8):
-            if b & (1 << i):
-                n += 1
-        return n
-
-    def edit_dist(self, b, t):
-        return self.nbits(b ^ t)
-
-    def edit_dist_to_beacon(self, b):
-        return self.edit_dist(b, BEACON)
