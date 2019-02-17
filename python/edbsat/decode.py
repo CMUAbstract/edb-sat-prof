@@ -6,7 +6,6 @@ import select
 import time
 
 from edbsat.decoder import *
-from edbsat.display import *
 
 parser = argparse.ArgumentParser(
     description="Parse packet data from EDBsat recorded by SDR dongle")
@@ -21,6 +20,9 @@ parser.add_argument('--output', '-o',
 parser.add_argument('--output-bytes',
     help="Output file where to save received bytes (binary)")
 args = parser.parse_args()
+
+if args.display:
+    from edbsat.display import *
 
 PKT_TYPE_TO_STRING = {
     PKT_TYPE_BEACON: "B",
@@ -194,7 +196,8 @@ while True:
             pkt_str = format_pkt(payload_type, payload)
             fout.write(pkt_str + "\n")
             fout.flush()
-            display.show_pkt(pkt_str)
+            if args.display:
+                display.show_pkt(pkt_str)
 
     if args.display and not put_back:
         display.show_bytes([b])
